@@ -1,60 +1,47 @@
-# SIGEPES Frontend
+# SIGEPES — Sistema de Gestión de Pesca Sostenible
 
-Sistema de Gestión de Pesca Sostenible — interfaz del MVP v1.0.
+Aplicación del **MVP v1.0 — Núcleo de control y legalidad**: registro digital de faenas, control de
+permisos, catálogo de especies con tallas mínimas, vedas y auditoría, alineado con la Ley 13 de 1990,
+la Ley 1851 de 2017 y la meta 14.4 del ODS 14.
 
-## Stack
-React 19, TypeScript, Vite, Material UI, React Router, React Query, Zustand, React Hook Form, Zod, PWA.
+```
+Sigepes/
+├── frontend/   React 19 + TypeScript + Vite + MUI   → :5173
+└── backend/    Spring Boot 4 + Java 21 + PostgreSQL → :8080
+```
 
-## Requisitos
-- Node.js 22 LTS o superior
-- npm 10+
-- El backend en marcha (ver `../backend/README.md`)
-
-## Instalación
+## Arrancar todo
 
 ```bash
+# 1) Base de datos y API
+cd backend
+cp .env.example .env
+docker compose up -d postgres
+./mvnw spring-boot:run          # Windows: mvnw.cmd spring-boot:run
+
+# 2) Interfaz (en otra terminal)
+cd frontend
 npm install
-npm run dev      # http://localhost:5173
+npm run dev
 ```
 
-`vite.config.ts` redirige `/api` a `http://localhost:8080`, así que **el backend debe estar
-levantado** para que la aplicación funcione: ya no hay datos simulados.
+Abre `http://localhost:5173` y entra con `pescador@sigepes.gov.co` / `Pesca#2026`.
+La documentación de la API queda en `http://localhost:8080/swagger-ui.html`.
 
-## Variables de entorno
+Para levantar API y base con un solo comando: `cd backend && docker compose up --build`.
 
-Copia `.env.example` a `.env` si necesitas cambiar algo:
+## Alcance
 
-| Variable | Por defecto | Para qué sirve |
-|---|---|---|
-| `VITE_APP_NAME` | `SIGEPES` | Título de la barra superior |
-| `VITE_API_BASE_URL` | `/api/v1` | Base de la API (pasa por el proxy de Vite) |
-| `VITE_REQUEST_TIMEOUT_MS` | `15000` | Tiempo máximo de espera de Axios |
+**Implementado (MVP v1.0):** RF-01 autenticación · RF-02 embarcaciones y artes · RF-03 bitácora de
+faenas y capturas · RF-05 vedas · RF-06 especies y tallas mínimas · RF-08 permisos y licencias ·
+RF-20 administración y auditoría.
 
-## Credenciales de prueba
+**Fuera de alcance por ahora:** cuotas (RF-07), geolocalización (RF-04), trazabilidad (RF-09),
+denuncias (RF-10), alertas (RF-11), tablero (RF-12), AMP (RF-13), datos ambientales (RF-14),
+documentos (RF-15), marketplace (RF-16), RMS (RF-17), reportes (RF-18) y educación (RF-19).
+Corresponden a v1.1 y 2.0; el modelo de datos ya está preparado para acogerlos.
 
-Las cargan los datos DEMO del backend. Contraseña común: **`Pesca#2026`**.
+## Documentación
 
-| Correo | Rol | Qué se ve |
-|---|---|---|
-| `pescador@sigepes.gov.co` | Pescador | Sus embarcaciones, faenas y permisos |
-| `inspector@sigepes.gov.co` | Inspector AUNAP | Todo; aprueba y suspende permisos; auditoría |
-| `admin@sigepes.gov.co` | Administrador | Todo lo anterior más la gestión de usuarios |
-| `armador@sigepes.gov.co` | Armador | Como el pescador |
-| `analista@sigepes.gov.co` | Analista | Catálogos y vedas |
-
-## Comandos
-
-```bash
-npm run dev       # desarrollo
-npm run build     # tsc -b + build de producción
-npm run preview   # sirve el build (aquí sí funciona la PWA)
-npm run lint      # oxlint
-```
-
-## Notas
-
-- La sesión (token y usuario) se guarda con Zustand en `localStorage`; un `401` la limpia sola.
-- Las faenas registradas **sin conexión** quedan en `localStorage` y se envían con el botón
-  «Sincronizar» de la bitácora. Un rechazo del servidor (veda, talla, permiso) **no** se guarda como
-  pendiente: se muestra el error, porque volver a enviarlo daría el mismo resultado.
-- Los mocks de MSW se retiraron al conectar la API real.
+- `backend/README.md` — instalación, variables, migraciones, endpoints, roles, reglas de negocio y pruebas.
+- `frontend/README.md` — instalación, variables y credenciales de prueba.

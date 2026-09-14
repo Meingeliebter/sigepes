@@ -1,32 +1,11 @@
-# Dependencias
-node_modules
+# Este repositorio es un monorepo: frontend/ y backend/ tienen su propio
+# .gitignore para sus artefactos de build. Aquí solo van reglas de la raíz.
 
-# Build
-dist
-dist-ssr
+# Configuración local de editores/herramientas (no compartida entre el equipo)
+.vscode/
+.idea/
+.claude/
 
-# Entornos locales (NO subir secretos)
-.env
-.env.local
-.env.*.local
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Editor / OS
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Sistema operativo
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Test / cobertura
-coverage
+Thumbs.db
