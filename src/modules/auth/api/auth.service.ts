@@ -12,4 +12,19 @@ export const authService = {
     const { data } = await httpClient.post<AuthSession>('/auth/register', body);
     return data;
   },
+  async me() {
+    const { data } = await httpClient.get<AuthSession>('/auth/me');
+    return data;
+  },
+  /**
+   * Cierra la sesión en el servidor para que quede constancia en la auditoría.
+   * El fallo no debe impedir salir: la sesión local se limpia igualmente.
+   */
+  async logout() {
+    try {
+      await httpClient.post('/auth/logout');
+    } catch {
+      // Sin conexión o token ya caducado: se ignora a propósito.
+    }
+  },
 };

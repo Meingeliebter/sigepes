@@ -2,41 +2,44 @@ import DirectionsBoatIcon from '@mui/icons-material/DirectionsBoat';
 import GavelIcon from '@mui/icons-material/Gavel';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Alert, Box, Card, CardContent, Divider, Grid, List, ListItem, ListItemText, Stack, Typography } from '@mui/material';
+import { Alert, Box, Card, CardContent, CircularProgress, Divider, Grid, List, ListItem, ListItemText, Stack, Typography } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import { StatCard } from '../../../shared/components/StatCard';
 import { StatusChip } from '../../../shared/components/StatusChip';
+import { domainService } from '../../../shared/api/domain.service';
 import { useAuthStore } from '../../../modules/auth/store/authStore';
-
-const RECENT = [
-  { title: 'Faena cerrada en Bahía Solano', status: 'SYNCHRONIZED', date: '05 sep 2026' },
-  { title: 'Permiso PES-0231 aprobado', status: 'APPROVED', date: '04 sep 2026' },
-  { title: 'Veda de camarón activada', status: 'CLOSED', date: '02 sep 2026' },
-  { title: 'Faena pendiente de sincronizar', status: 'PENDING_SYNC', date: '01 sep 2026' },
-];
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
+  const summaryQuery = useQuery({ queryKey: ['summary'], queryFn: domainService.summary });
+  const summary = summaryQuery.data;
+
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h4">Hola, {user?.fullName ?? 'usuario'}</Typography>
+      <Box sx={{ pl: 2, borderLeft: '4px solid', borderColor: 'secondary.main' }}>
+        <Typography variant="overline" color="secondary.dark">Panel institucional</Typography>
+        <Typography variant="h4">Hola, {summary?.fullName ?? user?.fullName ?? 'usuario'}</Typography>
         <Typography color="text.secondary">Resumen operativo de SIGEPES</Typography>
       </Box>
 
-      <Alert severity="info">Tienes 1 faena por sincronizar y 1 permiso próximo a vencer.</Alert>
+      {summaryQuery.isLoading && <CircularProgress size={28} />}
+      {summaryQuery.isError && <Alert severity="error">No fue posible cargar el resumen.</Alert>}
+      {summary?.alerts.map((alert) => (
+        <Alert key={alert} severity="info">{alert}</Alert>
+      ))}
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard label="Embarcaciones" value={2} icon={<DirectionsBoatIcon color="primary" />} helper="1 en mantenimiento" />
+          <StatCard label="Embarcaciones" value={summary?.vessels.value ?? 0} icon={<DirectionsBoatIcon color="primary" />} helper={summary?.vessels.helper ?? ''} accent="primary" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard label="Permisos vigentes" value={1} icon={<GavelIcon color="success" />} helper="1 por vencer" />
+          <StatCard label="Permisos vigentes" value={summary?.permits.value ?? 0} icon={<GavelIcon color="success" />} helper={summary?.permits.helper ?? ''} accent="success" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard label="Faenas del mes" value={8} icon={<MenuBookIcon color="secondary" />} helper="7 sincronizadas" />
+          <StatCard label="Faenas del mes" value={summary?.trips.value ?? 0} icon={<MenuBookIcon color="secondary" />} helper={summary?.trips.helper ?? ''} accent="secondary" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard label="Alertas activas" value={3} icon={<WarningAmberIcon color="warning" />} helper="2 vedas y 1 zona" />
+          <StatCard label="Alertas activas" value={summary?.warnings.value ?? 0} icon={<WarningAmberIcon color="warning" />} helper={summary?.warnings.helper ?? ''} accent="warning" />
         </Grid>
       </Grid>
 
@@ -47,11 +50,14 @@ export function DashboardPage() {
               <Typography variant="h6" gutterBottom>Actividad reciente</Typography>
               <Divider sx={{ mb: 1 }} />
               <List disablePadding>
-                {RECENT.map((item) => (
-                  <ListItem key={item.title} secondaryAction={<StatusChip status={item.status} />} disableGutters>
+                {(summary?.recent ?? []).map((item) => (
+                  <ListItem key={item.id} secondaryAction={<StatusChip status={item.status} />} disableGutters>
                     <ListItemText primary={item.title} secondary={item.date} />
                   </ListItem>
                 ))}
+                {summary && summary.recent.length === 0 && (
+                  <Typography color="text.secondary" variant="body2">Todavía no hay actividad registrada.</Typography>
+                )}
               </List>
             </CardContent>
           </Card>
@@ -62,10 +68,12 @@ export function DashboardPage() {
               <Typography variant="h6" gutterBottom>Cumplimiento normativo</Typography>
               <Divider sx={{ mb: 2 }} />
               <Stack spacing={1.5}>
-                <Stack direction="row" justifyContent="space-between"><Typography>Permisos al día</Typography><StatusChip status="VALID" /></Stack>
-                <Stack direction="row" justifyContent="space-between"><Typography>Tallas mínimas</Typography><StatusChip status="ACTIVE" /></Stack>
-                <Stack direction="row" justifyContent="space-between"><Typography>Veda de camarón</Typography><StatusChip status="CLOSED" /></Stack>
-                <Stack direction="row" justifyContent="space-between"><Typography>Sincronización</Typography><StatusChip status="PENDING_SYNC" /></Stack>
+                {(summary?.compliance ?? []).map((row) => (
+                  <Stack key={row.label} direction="row" justifyContent="space-between">
+                    <Typography>{row.label}</Typography>
+                    <StatusChip status={row.status} />
+                  </Stack>
+                ))}
               </Stack>
             </CardContent>
           </Card>

@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Button, Link, Stack, TextField, Typography } from '@mui/material';
+import LoginIcon from '@mui/icons-material/Login';
+import { Alert, Button, Divider, Link, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { Controller, useForm } from 'react-hook-form';
@@ -35,30 +36,59 @@ export function LoginPage() {
 
   return (
     <AuthShell>
-      <Typography variant="h6" sx={{ mb: 2 }}>Iniciar sesión</Typography>
+      <Stack spacing={0.5} sx={{ mb: 3 }}>
+        <Typography variant="h5" component="h1">Iniciar sesión</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Accede con tu cuenta institucional para operar el sistema.
+        </Typography>
+      </Stack>
+
       {message && (
-        <Alert severity="error" sx={{ mb: 2 }}>{message}</Alert>
+        <Alert severity="error" sx={{ mb: 2.5 }} role="alert">{message}</Alert>
       )}
-      <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate>
+
+      <Stack component="form" spacing={2.5} onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate>
         <Controller
           name="email"
           control={control}
           render={({ field }) => (
-            <TextField {...field} label="Correo" autoComplete="email" error={!!errors.email} helperText={errors.email?.message} />
+            <TextField
+              {...field}
+              label="Correo institucional"
+              autoComplete="email"
+              autoFocus
+              required
+              error={!!errors.email}
+              helperText={errors.email?.message}
+            />
           )}
         />
         <Controller
           name="password"
           control={control}
           render={({ field }) => (
-            <TextField {...field} label="Contraseña" type="password" autoComplete="current-password" error={!!errors.password} helperText={errors.password?.message} />
+            <TextField
+              {...field}
+              label="Contraseña"
+              type="password"
+              autoComplete="current-password"
+              required
+              error={!!errors.password}
+              helperText={errors.password?.message}
+            />
           )}
         />
-        <Button type="submit" variant="contained" disabled={mutation.isPending}>
+        <Button type="submit" size="large" variant="contained" startIcon={<LoginIcon />} disabled={mutation.isPending}>
           {mutation.isPending ? 'Ingresando...' : 'Ingresar'}
         </Button>
-        <Typography textAlign="center">
-          ¿No tienes cuenta? <Link component={RouterLink} to="/register">Regístrate</Link>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        <Typography textAlign="center" variant="body2" color="text.secondary">
+          ¿No tienes cuenta?{' '}
+          <Link component={RouterLink} to="/register" fontWeight={600}>
+            Regístrate como pescador o armador
+          </Link>
         </Typography>
       </Stack>
     </AuthShell>

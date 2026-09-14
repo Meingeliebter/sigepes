@@ -24,6 +24,9 @@ export function PageContainer({
           flexWrap: 'wrap',
           gap: 2,
           mb: 2,
+          pl: 2,
+          borderLeft: '4px solid',
+          borderColor: 'secondary.main',
         }}
       >
         <Box>

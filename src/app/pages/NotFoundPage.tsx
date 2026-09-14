@@ -1,13 +1,17 @@
 import { Button, Stack, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import { Logotype } from '../../shared/components/Logotype';
 
 export function NotFoundPage() {
-  const navigate = useNavigate();
   return (
-    <Stack alignItems="center" justifyContent="center" minHeight="80vh" spacing={2}>
-      <Typography variant="h1" fontWeight={900} color="primary">404</Typography>
-      <Typography>La página que buscas no existe.</Typography>
-      <Button variant="contained" onClick={() => void navigate('/app/dashboard')}>Volver al inicio</Button>
+    <Stack alignItems="center" justifyContent="center" minHeight="100vh" spacing={3} sx={{ px: 3, textAlign: 'center' }}>
+      <Logotype showTagline={false} />
+      <Typography variant="h1" fontWeight={800} color="primary.main">404</Typography>
+      <Typography variant="h6">La página que buscas no existe</Typography>
+      <Typography color="text.secondary" sx={{ maxWidth: 420 }}>
+        Verifica la dirección o vuelve al inicio del portal institucional.
+      </Typography>
+      <Button component={RouterLink} to="/" variant="contained">Volver al inicio</Button>
     </Stack>
   );
 }

@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { sigepesTheme } from '@/shared/theme/theme';
+import { theme } from '@/shared/theme/theme';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -28,7 +28,7 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={sigepesTheme}>
+      <ThemeProvider theme={theme}>
         <CssBaseline />
         <BrowserRouter>{children}</BrowserRouter>
       </ThemeProvider>

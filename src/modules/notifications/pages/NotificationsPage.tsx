@@ -2,36 +2,43 @@ import BlockIcon from '@mui/icons-material/Block';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import GavelIcon from '@mui/icons-material/Gavel';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Avatar, Card, List, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material';
+import { Alert, Avatar, Card, CircularProgress, List, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { PageHeader } from '../../../shared/components/PageHeader';
+import { domainService, type Notification } from '../../../shared/api/domain.service';
 
-interface Notification {
-  id: string;
-  title: string;
-  body: string;
-  date: string;
-  icon: ReactNode;
-  color: string;
-}
+const ICON_BY_TYPE: Record<Notification['type'], ReactNode> = {
+  CLOSURE: <BlockIcon />,
+  PERMIT: <GavelIcon />,
+  TRIP: <CloudSyncIcon />,
+  INFO: <WarningAmberIcon />,
+};
 
-const NOTIFICATIONS: Notification[] = [
-  { id: 'n1', title: 'Veda de camarón activada', body: 'Restricción vigente en el Pacífico Norte hasta el 30 de octubre.', date: 'Hace 2 h', icon: <BlockIcon />, color: '#C62828' },
-  { id: 'n2', title: 'Permiso próximo a vencer', body: 'El permiso PES-0231 vence en 15 días.', date: 'Hace 1 día', icon: <GavelIcon />, color: '#ED6C02' },
-  { id: 'n3', title: 'Faena sincronizada', body: 'La faena T-1042 se sincronizó correctamente.', date: 'Hace 2 días', icon: <CloudSyncIcon />, color: '#1E7A46' },
-  { id: 'n4', title: 'Zona restringida cercana', body: 'Estás próximo a un Área Marina Protegida.', date: 'Hace 3 días', icon: <WarningAmberIcon />, color: '#0A6572' },
-];
+const COLOR_BY_TYPE: Record<Notification['type'], string> = {
+  CLOSURE: 'error.main',
+  PERMIT: 'warning.main',
+  TRIP: 'success.main',
+  INFO: 'info.main',
+};
 
 export function NotificationsPage() {
+  const notificationsQuery = useQuery({ queryKey: ['notifications'], queryFn: domainService.notifications });
+  const notifications = notificationsQuery.data ?? [];
+
   return (
     <>
       <PageHeader title="Notificaciones" subtitle="Alertas regulatorias y operativas" />
+      {notificationsQuery.isLoading && <CircularProgress size={28} />}
+      {notificationsQuery.isError && <Alert severity="error" sx={{ mb: 2 }}>No fue posible cargar las notificaciones.</Alert>}
       <Card>
         <List disablePadding>
-          {NOTIFICATIONS.map((item, index) => (
-            <ListItem key={item.id} divider={index < NOTIFICATIONS.length - 1} alignItems="flex-start">
+          {notifications.map((item, index) => (
+            <ListItem key={item.id} divider={index < notifications.length - 1} alignItems="flex-start">
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: item.color }}>{item.icon}</Avatar>
+                <Avatar sx={{ bgcolor: COLOR_BY_TYPE[item.type] ?? COLOR_BY_TYPE.INFO }}>
+                  {ICON_BY_TYPE[item.type] ?? ICON_BY_TYPE.INFO}
+                </Avatar>
               </ListItemAvatar>
               <ListItemText
                 primary={<Typography fontWeight={700}>{item.title}</Typography>}

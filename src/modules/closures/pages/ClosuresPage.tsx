@@ -1,29 +1,28 @@
 import BlockIcon from '@mui/icons-material/Block';
-import { Card, CardContent, Grid, Stack, Typography } from '@mui/material';
+import { Alert, Card, CardContent, CircularProgress, Grid, Stack, Typography } from '@mui/material';
 import { PageHeader } from '../../../shared/components/PageHeader';
+import { EmptyState } from '../../../shared/components/EmptyState';
 import { StatusChip } from '../../../shared/components/StatusChip';
-
-interface Closure {
-  id: string;
-  species: string;
-  zone: string;
-  from: string;
-  to: string;
-  status: string;
-}
-
-const CLOSURES: Closure[] = [
-  { id: 'c1', species: 'Camarón blanco', zone: 'Pacífico Norte', from: '01 sep 2026', to: '30 oct 2026', status: 'CLOSED' },
-  { id: 'c2', species: 'Pargo rojo', zone: 'Caribe', from: '15 dic 2026', to: '31 ene 2027', status: 'EXPIRING' },
-  { id: 'c3', species: 'Langosta espinosa', zone: 'San Andrés', from: '01 abr 2026', to: '30 jun 2026', status: 'OPEN' },
-];
+import { useQuery } from '@tanstack/react-query';
+import { domainService } from '../../../shared/api/domain.service';
 
 export function ClosuresPage() {
+  const closuresQuery = useQuery({ queryKey: ['closures'], queryFn: domainService.closures });
+  const closures = closuresQuery.data ?? [];
   return (
     <>
       <PageHeader title="Vedas pesqueras" subtitle="Periodos de restricción por especie y zona" />
+      {closuresQuery.isLoading && <CircularProgress size={28} />}
+      {closuresQuery.isError && <Alert severity="error" sx={{ mb: 2 }}>No fue posible cargar las vedas.</Alert>}
+      {!closuresQuery.isLoading && !closuresQuery.isError && closures.length === 0 && (
+        <EmptyState
+          icon={<BlockIcon sx={{ fontSize: 48, color: 'text.disabled' }} />}
+          title="No hay vedas registradas"
+          description="Actualmente no existen periodos de restricción declarados por la autoridad."
+        />
+      )}
       <Grid container spacing={2}>
-        {CLOSURES.map((closure) => (
+        {closures.map((closure) => (
           <Grid size={{ xs: 12, md: 4 }} key={closure.id}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
