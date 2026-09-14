@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sigepes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sigepes}
+      POSTGRES_USER: ${POSTGRES_USER:-sigepes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigepes}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - sigepes-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sigepes} -d ${POSTGRES_DB:-sigepes}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sigepes-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-sigepes}
+      DATABASE_USER: ${POSTGRES_USER:-sigepes}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-sigepes}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-please-32-bytes-minimum}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-86400}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173,http://127.0.0.1:5173}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      API_PORT: 8080
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  sigepes-postgres-data:

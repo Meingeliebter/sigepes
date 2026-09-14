@@ -1,0 +1,15 @@
+html, body, #root { min-height: 100%; margin: 0; }
+body { background: #F6F8FA; color: #152935; }
+* { box-sizing: border-box; }
+a { color: inherit; }
+
+/* Utilidad reusada por MuiCssBaseline (ver theme.ts) para el enlace "saltar al contenido". */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 2000;
+}
+.skip-link:focus { top: 8px; }
+
+::selection { background: #0E7C86; color: #ffffff; }
