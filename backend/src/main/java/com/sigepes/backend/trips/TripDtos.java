@@ -44,6 +44,7 @@ public final class TripDtos {
             String vesselId,
             String vessel,
             String zone,
+            String originPort,
             String date,
             String status,
             boolean nullDeclaration,
@@ -55,6 +56,8 @@ public final class TripDtos {
             String permitNumber,
             String departureTime,
             String arrivalTime,
+            BigDecimal landingLatitude,
+            BigDecimal landingLongitude,
             String notes,
             BigDecimal totalWeightKg) {
 
@@ -68,6 +71,7 @@ public final class TripDtos {
                     entity.getVessel().getId(),
                     entity.getVessel().getName(),
                     entity.getZone(),
+                    entity.getOriginPort(),
                     entity.getTripDate().toString(),
                     entity.getStatus().name(),
                     entity.isNullDeclaration(),
@@ -79,6 +83,8 @@ public final class TripDtos {
                     entity.getPermit() == null ? null : entity.getPermit().getNumber(),
                     entity.getDepartureTime() == null ? null : entity.getDepartureTime().toString(),
                     entity.getArrivalTime() == null ? null : entity.getArrivalTime().toString(),
+                    entity.getLandingLatitude(),
+                    entity.getLandingLongitude(),
                     entity.getNotes(),
                     total);
         }
@@ -102,6 +108,10 @@ public final class TripDtos {
             @Size(max = 120, message = "La zona no puede superar 120 caracteres")
             String zone,
 
+            @NotBlank(message = "El puerto de origen es obligatorio")
+            @Size(max = 120, message = "El puerto de origen no puede superar 120 caracteres")
+            String originPort,
+
             LocalDate date,
 
             LocalTime departureTime,
@@ -122,6 +132,7 @@ public final class TripDtos {
             @NotBlank(message = "La especie es obligatoria")
             String speciesId,
 
+            @NotNull(message = "El conteo individual es obligatorio")
             @Positive(message = "La cantidad debe ser mayor que cero")
             Integer quantity,
 
@@ -134,14 +145,29 @@ public final class TripDtos {
             BigDecimal averageSizeCm) {
     }
 
-    /** Cierre de faena: con capturas o con declaración de captura nula (RN-06). */
+    /**
+     * Cierre de faena (con capturas o con declaración de captura nula, RN-06) y también cuerpo de
+     * la corrección posterior ({@code PATCH /faenas/{id}}).
+     *
+     * <p>{@code landingLatitude}/{@code landingLongitude} son obligatorias al cerrar (AC-03.2,
+     * validado en {@code TripService.close}, no aquí, porque este mismo record lo reutiliza
+     * {@code correct} donde no aplican). {@code reason} solo se exige al corregir una faena ya
+     * cerrada (AC-03.5, validado en {@code TripService.correct}).
+     */
     public record CloseTripRequest(
             Boolean nullDeclaration,
 
             LocalTime arrivalTime,
 
             @Size(max = 600, message = "Las observaciones no pueden superar 600 caracteres")
-            String notes) {
+            String notes,
+
+            BigDecimal landingLatitude,
+
+            BigDecimal landingLongitude,
+
+            @Size(max = 400, message = "El motivo no puede superar 400 caracteres")
+            String reason) {
     }
 
     /** Faena pendiente enviada por el cliente al recuperar conexión. */
@@ -149,10 +175,13 @@ public final class TripDtos {
             String id,
             String vesselId,
             String zone,
+            String originPort,
             LocalDate date,
             String status,
             Boolean nullDeclaration,
             List<CreateCatchRequest> captures,
+            BigDecimal landingLatitude,
+            BigDecimal landingLongitude,
             String ownerId) {
     }
 }

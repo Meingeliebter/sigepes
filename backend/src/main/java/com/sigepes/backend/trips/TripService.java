@@ -3,7 +3,9 @@ package com.sigepes.backend.trips;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -112,6 +114,7 @@ public class TripService {
         PermitEntity permit = compliance.requireValidPermit(owner.getId(), date);
 
         FishingTripEntity trip = new FishingTripEntity(id, owner, vessel, request.zone().trim(), date);
+        trip.setOriginPort(request.originPort().trim());
         trip.setPermit(permit);
         trip.setDepartureTime(request.departureTime());
         trip.setArrivalTime(request.arrivalTime());
@@ -172,10 +175,16 @@ public class TripService {
 
         boolean nullDeclaration = Boolean.TRUE.equals(request.nullDeclaration());
         compliance.requireClosable(trip.getCatches().size(), nullDeclaration);
+        if (request.landingLatitude() == null || request.landingLongitude() == null) {
+            throw ApiException.of(ErrorCode.VALIDATION_ERROR,
+                    "La ubicación GPS de desembarco es obligatoria para cerrar la faena.");
+        }
 
         trip.setNullDeclaration(nullDeclaration);
         trip.setStatus(TripStatus.CLOSED);
         trip.setClosedAt(Instant.now());
+        trip.setLandingLatitude(request.landingLatitude());
+        trip.setLandingLongitude(request.landingLongitude());
         if (request.arrivalTime() != null) {
             trip.setArrivalTime(request.arrivalTime());
         }
@@ -199,11 +208,18 @@ public class TripService {
     public TripResponse correct(String tripId, CloseTripRequest request, String zone) {
         AuthenticatedUser actor = currentUser.require();
         FishingTripEntity trip = byId(tripId);
+        boolean wasClosed = !trip.isOpen();
 
-        if (!trip.isOpen() && !actor.isAuthority()) {
+        if (wasClosed && !actor.isAuthority()) {
             throw ApiException.of(ErrorCode.FORBIDDEN, "Solo la autoridad puede corregir una faena cerrada.");
         }
         requireOwnership(trip);
+
+        // AC-03.5: toda corrección posterior al cierre debe llevar un motivo explícito.
+        String reason = request.reason() == null ? null : request.reason().trim();
+        if (wasClosed && (reason == null || reason.isBlank())) {
+            throw ApiException.of(ErrorCode.VALIDATION_ERROR, "Debes indicar el motivo del cambio.");
+        }
 
         String before = describe(trip);
         if (zone != null && !zone.isBlank()) {
@@ -215,10 +231,18 @@ public class TripService {
         if (request.notes() != null) {
             trip.setNotes(request.notes());
         }
+        if (request.landingLatitude() != null) {
+            trip.setLandingLatitude(request.landingLatitude());
+        }
+        if (request.landingLongitude() != null) {
+            trip.setLandingLongitude(request.landingLongitude());
+        }
 
         FishingTripEntity saved = repository.save(trip);
-        auditService.recordChange("TRIP_CORRECTED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
-                "Corrección de la faena " + saved.getId(), before, describe(saved));
+        String detail = "Corrección de la faena " + saved.getId()
+                + (reason == null || reason.isBlank() ? "" : ". Motivo: " + reason);
+        auditService.recordChange("TRIP_CORRECTED", AuditService.MODULE_TRIPS, "Faena", saved.getId(), detail,
+                before, describe(saved));
         return TripResponse.from(saved);
     }
 
@@ -239,19 +263,19 @@ public class TripService {
                 continue;
             }
 
-            TripResponse trip = start(new CreateTripRequest(id, item.vesselId(), null, item.zone(), item.date(),
-                    null, null, null, item.ownerId()));
+            TripResponse trip = start(new CreateTripRequest(id, item.vesselId(), null, item.zone(),
+                    item.originPort(), item.date(), null, null, null, item.ownerId()));
             if (item.captures() != null) {
                 for (CreateCatchRequest capture : item.captures()) {
                     trip = addCatch(trip.id(), capture);
                 }
             }
             if (item.status() == null || TripStatus.CLOSED.name().equals(item.status())) {
-                trip = close(trip.id(), new CloseTripRequest(
-                        Boolean.TRUE.equals(item.nullDeclaration()), null, null));
+                trip = close(trip.id(), new CloseTripRequest(Boolean.TRUE.equals(item.nullDeclaration()), null, null,
+                        item.landingLatitude(), item.landingLongitude(), null));
             }
-            auditService.record(AuditActionType.CREATE, "TRIP_SYNCHRONIZED", AuditService.MODULE_TRIPS, "Faena", trip.id(),
-                    "Sincronización de una faena registrada sin conexión");
+            auditService.record(AuditActionType.CREATE, "TRIP_SYNCHRONIZED", AuditService.MODULE_TRIPS, "Faena",
+                    trip.id(), "Sincronización de una faena registrada sin conexión");
             result.add(trip);
         }
         return result;
@@ -272,7 +296,15 @@ public class TripService {
     }
 
     private static String describe(FishingTripEntity trip) {
-        return "zone=" + trip.getZone() + "; status=" + trip.getStatus() + "; arrival=" + trip.getArrivalTime()
-                + "; notes=" + trip.getNotes() + "; catches=" + trip.getCatches().size();
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("zone", trip.getZone());
+        fields.put("originPort", trip.getOriginPort());
+        fields.put("status", trip.getStatus().name());
+        fields.put("arrival", trip.getArrivalTime() == null ? null : trip.getArrivalTime().toString());
+        fields.put("landingLatitude", trip.getLandingLatitude());
+        fields.put("landingLongitude", trip.getLandingLongitude());
+        fields.put("notes", trip.getNotes());
+        fields.put("catches", trip.getCatches().size());
+        return AuditService.toJson(fields);
     }
 }

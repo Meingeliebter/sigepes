@@ -9,6 +9,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PeopleIcon from '@mui/icons-material/People';
 import PhishingIcon from '@mui/icons-material/Phishing';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import {
@@ -16,8 +17,9 @@ import {
   ListItemIcon, ListItemText, ListSubheader, Toolbar, Typography, useMediaQuery, useTheme,
   BottomNavigation, BottomNavigationAction,
 } from '@mui/material';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '../../modules/auth/api/auth.service';
 import { useAuthStore } from '../../modules/auth/store/authStore';
@@ -27,8 +29,10 @@ import { Footer } from '../../shared/components/Footer';
 import { Logotype } from '../../shared/components/Logotype';
 import { SkipLink } from '../../shared/components/SkipLink';
 import { TopUtilityBar } from '../../shared/components/TopUtilityBar';
+import { useOnlineStatus } from '../../shared/hooks/useOnlineStatus';
 import { NAV_GROUPS, NAV_ITEMS } from '../../shared/permissions/navigation';
 import { pendingTripCount } from '../../shared/storage/tripOfflineStore';
+import { syncPendingTrips } from '../../shared/sync/tripSync';
 
 const WIDTH = 272;
 
@@ -42,6 +46,7 @@ const ICONS: Record<string, ReactNode> = {
   bell: <NotificationsIcon />,
   people: <PeopleIcon />,
   history: <HistoryIcon />,
+  qrcode: <QrCode2Icon />,
 };
 
 export function AppLayout() {
@@ -52,24 +57,28 @@ export function AppLayout() {
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const [online, setOnline] = useState(() => navigator.onLine);
+  const online = useOnlineStatus();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState(() => pendingTripCount());
+  const wasOnline = useRef(online);
 
   const items = NAV_ITEMS.filter((item) => (user ? item.roles.includes(user.role) : false));
   const mobileItems = items.slice(0, 5);
 
   useEffect(() => {
-    const setOnlineState = () => setOnline(navigator.onLine);
-    window.addEventListener('online', setOnlineState);
-    window.addEventListener('offline', setOnlineState);
     const refreshPending = () => setPending(pendingTripCount());
     window.addEventListener('storage', refreshPending);
-    return () => {
-      window.removeEventListener('online', setOnlineState);
-      window.removeEventListener('offline', setOnlineState);
-      window.removeEventListener('storage', refreshPending);
-    };
+    return () => window.removeEventListener('storage', refreshPending);
   }, []);
+
+  // AC-03.1: al recuperar conexión, sincroniza automáticamente las faenas pendientes sin
+  // esperar a que el usuario esté en la pantalla de bitácora ni pulse el botón manual.
+  useEffect(() => {
+    if (!wasOnline.current && online && pendingTripCount() > 0) {
+      void syncPendingTrips(queryClient).then(() => setPending(pendingTripCount()));
+    }
+    wasOnline.current = online;
+  }, [online, queryClient]);
 
   const go = (path: string) => {
     void navigate(path);
