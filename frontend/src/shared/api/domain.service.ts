@@ -166,6 +166,7 @@ export interface Notification {
   title: string;
   body: string;
   date: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
 }
 
 /** Cuerpo de una faena pendiente de sincronizar (registro offline). */

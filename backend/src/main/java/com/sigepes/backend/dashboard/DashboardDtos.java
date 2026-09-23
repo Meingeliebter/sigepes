@@ -40,6 +40,7 @@ public final class DashboardDtos {
             String type,
             String title,
             String body,
-            String date) {
+            String date,
+            String severity) {
     }
 }
