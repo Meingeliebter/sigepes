@@ -25,8 +25,8 @@ import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitRepository;
 import com.sigepes.backend.permits.PermitStatus;
 import com.sigepes.backend.species.MeasurementMethod;
-import com.sigepes.backend.species.SpeciesRegion;
 import com.sigepes.backend.species.SpeciesEntity;
+import com.sigepes.backend.species.SpeciesRegion;
 import com.sigepes.backend.species.SpeciesRepository;
 import com.sigepes.backend.species.SpeciesStatus;
 import com.sigepes.backend.users.Role;
@@ -112,25 +112,32 @@ public class DemoDataSeeder implements ApplicationRunner {
 
         // --- Embarcaciones ------------------------------------------------
         vessel("DEMO La Sirena", "DIMAR-CO-10231", "Bahía Solano", fisher, VesselStatus.ACTIVE,
-                Set.of(handline, trap), "Lancha artesanal", new BigDecimal("3.50"));
+                Set.of(handline, trap), "Lancha artesanal", "Fibra de vidrio", new BigDecimal("75.00"),
+                new BigDecimal("3.50"));
         vessel("DEMO Estrella del Mar", "DIMAR-CO-11875", "Buenaventura", fisher, VesselStatus.UNDER_MAINTENANCE,
-                Set.of(longline), "Lancha artesanal", new BigDecimal("4.20"));
+                Set.of(longline), "Lancha artesanal", "Madera", new BigDecimal("60.00"), new BigDecimal("4.20"));
         vessel("DEMO Mar Abierto", "DIMAR-CO-20044", "Tumaco", shipowner, VesselStatus.ACTIVE, Set.of(longline),
-                "Embarcación industrial", new BigDecimal("42.00"));
+                "Embarcación industrial", "Acero", new BigDecimal("450.00"), new BigDecimal("42.00"));
 
         // --- Especies y tallas mínimas -----------------------------------
-        SpeciesEntity snapper = species("Pargo rojo", "Lutjanus purpureus", new BigDecimal("35.00"));
-        SpeciesEntity shrimp = species("Camarón blanco", "Litopenaeus vannamei", new BigDecimal("12.00"));
-        species("Atún aleta amarilla", "Thunnus albacares", new BigDecimal("50.00"));
-        species("Sierra", "Scomberomorus sierra", new BigDecimal("40.00"));
-        species("Corvina", "Cynoscion phoxocephalus", new BigDecimal("30.00"));
+        SpeciesEntity snapper = species("Pargo rojo", "Lutjanus purpureus", new BigDecimal("35.00"),
+                MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.CARIBE);
+        SpeciesEntity shrimp = species("Camarón blanco", "Litopenaeus vannamei", new BigDecimal("12.00"),
+                MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
+        species("Atún aleta amarilla", "Thunnus albacares", new BigDecimal("50.00"),
+                MeasurementMethod.FORK_LENGTH, SpeciesRegion.AMBAS);
+        species("Sierra", "Scomberomorus sierra", new BigDecimal("40.00"),
+                MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
+        species("Corvina", "Cynoscion phoxocephalus", new BigDecimal("30.00"),
+                MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
 
-        // --- Vedas: una vigente hoy y otra programada --------------------
+        // --- Vedas: una vigente hoy (total) y otra programada (parcial) --
         LocalDate today = LocalDate.now();
         closure(shrimp, "Pacífico Norte", today.minusDays(10), today.plusDays(45),
-                "Periodo reproductivo del camarón blanco.", inspector);
+                "Periodo reproductivo del camarón blanco.", inspector, "AUNAP-0456-2025", ClosureType.TOTAL);
         closure(snapper, "Caribe", today.plusMonths(3), today.plusMonths(4).plusDays(15),
-                "Veda preventiva programada para el pargo rojo.", inspector);
+                "Veda preventiva programada para el pargo rojo; se exceptúa la pesca de subsistencia.", inspector,
+                "AUNAP-0512-2025", ClosureType.PARTIAL);
 
         // --- Permisos: vigente, vencido y pendiente ----------------------
         permit("PES-0231", "Pesca artesanal", fisher, today.minusMonths(6), today.plusMonths(6),
@@ -159,28 +166,31 @@ public class DemoDataSeeder implements ApplicationRunner {
     }
 
     private VesselEntity vessel(String name, String registration, String port, UserEntity owner, VesselStatus status,
-            Set<FishingGearEntity> gears, String type, BigDecimal capacity) {
+            Set<FishingGearEntity> gears, String type, String hullType, BigDecimal enginePower, BigDecimal capacity) {
         VesselEntity vessel = new VesselEntity(prefixedId("emb", registration), name, registration, port, owner);
         vessel.setStatus(status);
         vessel.setGears(new LinkedHashSet<>(gears));
         vessel.setVesselType(type);
+        vessel.setHullType(hullType);
+        vessel.setEnginePower(enginePower);
         vessel.setCapacityTons(capacity);
         vessel.setDemo(true);
         return vesselRepository.save(vessel);
     }
 
-    private SpeciesEntity species(String commonName, String scientificName, BigDecimal minSizeCm) {
+    private SpeciesEntity species(String commonName, String scientificName, BigDecimal minSizeCm,
+            MeasurementMethod measurementMethod, SpeciesRegion region) {
         SpeciesEntity species = new SpeciesEntity(prefixedId("esp", commonName), commonName, scientificName,
-                minSizeCm, SpeciesStatus.ACTIVE, MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.AMBAS,
+                minSizeCm, SpeciesStatus.ACTIVE, measurementMethod, region,
                 "https://placehold.co/400x300?text=" + commonName.replace(" ", "+"));
         species.setDemo(true);
         return speciesRepository.save(species);
     }
 
     private ClosureEntity closure(SpeciesEntity species, String zone, LocalDate from, LocalDate to, String reason,
-            UserEntity createdBy) {
+            UserEntity createdBy, String resolutionNumber, ClosureType closureType) {
         ClosureEntity closure = new ClosureEntity(prefixedId("ved", species.getCommonName() + zone), species, zone,
-                from, to, ClosureStatus.SCHEDULED, "AUNAP-DEMO-0001", ClosureType.TOTAL);
+                from, to, ClosureStatus.SCHEDULED, resolutionNumber, closureType);
         closure.setStatus(closure.effectiveStatus(LocalDate.now()));
         closure.setReason(reason);
         closure.setNotes("Registro DEMO de veda.");
