@@ -18,6 +18,7 @@ import { NotificationsPage } from '../modules/notifications/pages/NotificationsP
 import { UsersPage } from '../modules/users/pages/UsersPage';
 import { AuditPage } from '../modules/audit/pages/AuditPage';
 import { VesselAuditPage } from '../modules/inspections/pages/VesselAuditPage';
+import { PermitVerificationPage } from '../modules/permits/pages/PermitVerificationPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
@@ -44,7 +45,10 @@ export const router = createBrowserRouter([
           { element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />, children: [{ path: 'audit', element: <AuditPage /> }] },
           {
             element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />,
-            children: [{ path: 'inspections/scan', element: <VesselAuditPage /> }],
+            children: [
+              { path: 'inspections/scan', element: <VesselAuditPage /> },
+              { path: 'permits/verify', element: <PermitVerificationPage /> },
+            ],
           },
         ],
       },

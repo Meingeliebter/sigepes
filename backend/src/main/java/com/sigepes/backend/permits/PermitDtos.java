@@ -1,6 +1,7 @@
 package com.sigepes.backend.permits;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -9,6 +10,15 @@ import jakarta.validation.constraints.Size;
 public final class PermitDtos {
 
     private PermitDtos() {
+    }
+
+    /** AC-08.5: resumen de un adjunto, sin exponer la ruta de almacenamiento en el servidor. */
+    public record AttachmentSummary(String kind, String originalFilename, String contentType) {
+
+        public static AttachmentSummary from(PermitAttachmentEntity entity) {
+            return new AttachmentSummary(entity.getKind().name(), entity.getOriginalFilename(),
+                    entity.getContentType());
+        }
     }
 
     /**
@@ -29,9 +39,11 @@ public final class PermitDtos {
             String reason,
             String verificationCode,
             boolean expiringSoon,
-            Integer daysToExpire) {
+            Integer daysToExpire,
+            List<AttachmentSummary> attachments) {
 
-        public static PermitResponse from(PermitEntity entity, LocalDate today, int warningDays) {
+        public static PermitResponse from(PermitEntity entity, LocalDate today, int warningDays,
+                List<PermitAttachmentEntity> attachmentEntities) {
             PermitStatus effective = entity.effectiveStatus(today);
             long days = java.time.temporal.ChronoUnit.DAYS.between(today, entity.getExpiresAt());
             return new PermitResponse(
@@ -46,7 +58,8 @@ public final class PermitDtos {
                     entity.getReason(),
                     entity.getVerificationCode(),
                     entity.isExpiringSoon(today, warningDays),
-                    (int) days);
+                    (int) days,
+                    attachmentEntities.stream().map(AttachmentSummary::from).toList());
         }
     }
 
