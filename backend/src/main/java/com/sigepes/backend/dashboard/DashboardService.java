@@ -15,6 +15,7 @@ import com.sigepes.backend.audit.AuditLogRepository;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
+import com.sigepes.backend.common.AppClock;
 import com.sigepes.backend.dashboard.DashboardDtos.ActivityResponse;
 import com.sigepes.backend.dashboard.DashboardDtos.ComplianceResponse;
 import com.sigepes.backend.dashboard.DashboardDtos.DashboardResponse;
@@ -66,7 +67,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardResponse summary() {
         AuthenticatedUser actor = currentUser.require();
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         LocalDate monthStart = today.withDayOfMonth(1);
         boolean authority = actor.isAuthority();
 
@@ -127,7 +128,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public List<NotificationResponse> notifications() {
         AuthenticatedUser actor = currentUser.require();
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         List<NotificationResponse> notifications = new ArrayList<>();
 
         for (ClosureEntity closure : closureRepository.findInForceOn(today)) {

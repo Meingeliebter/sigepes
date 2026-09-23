@@ -21,6 +21,20 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Notificaciones', path: '/app/notifications', icon: 'bell', roles: ALL, group: 'Recursos y control' },
   { label: 'Usuarios', path: '/app/users', icon: 'people', roles: ['ADMIN'], group: 'Administración' },
   { label: 'Auditoría', path: '/app/audit', icon: 'history', roles: ['INSPECTOR', 'ADMIN'], group: 'Administración' },
+  {
+    label: 'Auditoría de campo',
+    path: '/app/inspections/scan',
+    icon: 'qrcode',
+    roles: ['INSPECTOR', 'ADMIN'],
+    group: 'Administración',
+  },
+  {
+    label: 'Verificar permiso',
+    path: '/app/permits/verify',
+    icon: 'gavel',
+    roles: ['INSPECTOR', 'ADMIN'],
+    group: 'Administración',
+  },
 ];
 
 /** Etiquetas de las secciones del menú, en el orden en que deben mostrarse. */
