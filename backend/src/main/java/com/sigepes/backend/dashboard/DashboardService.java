@@ -148,6 +148,19 @@ public class DashboardService {
                     DAY.format(today)));
         }
 
+        // AC-20.5: alerta de seguridad por IP con fallos de login recientes, solo visible para ADMIN.
+        if (actor.isAdmin()) {
+            for (AuditLogRepository.SuspiciousIp ip : auditService.suspiciousLoginIps()) {
+                notifications.add(new NotificationResponse(
+                        "security-" + ip.getIpAddress(),
+                        "INFO",
+                        "Posible ataque de fuerza bruta",
+                        ip.getFailures() + " intentos de inicio de sesión fallidos desde " + ip.getIpAddress()
+                                + " en los últimos " + auditService.bruteForceWindowMinutes() + " minutos.",
+                        DAY.format(today)));
+            }
+        }
+
         if (notifications.isEmpty()) {
             notifications.add(new NotificationResponse("empty", "INFO", "Sin novedades",
                     "No hay vedas vigentes ni permisos próximos a vencer.", DAY.format(today)));
