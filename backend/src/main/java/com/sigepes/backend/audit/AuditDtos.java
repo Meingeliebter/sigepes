@@ -22,12 +22,16 @@ public final class AuditDtos {
             String timestamp,
             String occurredAt,
             String actor,
+            String actorId,
             String action,
+            String actionType,
             String module,
             String entity,
             String entityId,
             String detail,
-            String ip) {
+            String ip,
+            String beforeState,
+            String afterState) {
 
         public static AuditEventResponse from(AuditLogEntity entity) {
             return new AuditEventResponse(
@@ -35,12 +39,16 @@ public final class AuditDtos {
                     DISPLAY.format(entity.getOccurredAt().atZone(ZONE)),
                     entity.getOccurredAt().toString(),
                     entity.getActorLabel(),
+                    entity.getActorId(),
                     entity.getAction(),
+                    entity.getActionType().name(),
                     entity.getModule(),
                     entity.getEntity(),
                     entity.getEntityId(),
                     entity.getDetail(),
-                    entity.getIpAddress());
+                    entity.getIpAddress(),
+                    entity.getBeforeState(),
+                    entity.getAfterState());
         }
     }
 }

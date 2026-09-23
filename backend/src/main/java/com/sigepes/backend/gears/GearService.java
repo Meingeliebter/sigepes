@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.common.ApiException;
 import com.sigepes.backend.common.ErrorCode;
@@ -65,8 +66,8 @@ public class GearService {
         FishingGearEntity gear = repository.save(new FishingGearEntity(
                 Ids.generate("art"), name, request.description(), destructive, status));
 
-        auditService.record("GEAR_CREATED", AuditService.MODULE_GEARS, "Arte de pesca", gear.getId(),
-                "Alta de arte «" + gear.getName() + "»" + (destructive ? " marcada como destructiva" : ""));
+        auditService.record(AuditActionType.CREATE, "GEAR_CREATED", AuditService.MODULE_GEARS, "Arte de pesca",
+                gear.getId(), "Alta de arte «" + gear.getName() + "»" + (destructive ? " marcada como destructiva" : ""));
         return gear;
     }
 }

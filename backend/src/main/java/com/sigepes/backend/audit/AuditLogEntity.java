@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -33,6 +35,11 @@ public class AuditLogEntity {
     @Column(name = "action", length = 60, nullable = false)
     private String action;
 
+    /** AC-20.2: tipo de acción normalizado (CREATE/UPDATE/DELETE/SECURITY). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action_type", length = 20, nullable = false)
+    private AuditActionType actionType;
+
     @Column(name = "module", length = 40, nullable = false)
     private String module;
 
@@ -57,12 +64,14 @@ public class AuditLogEntity {
     protected AuditLogEntity() {
     }
 
-    AuditLogEntity(String id, Instant occurredAt, String actorId, String actorLabel, String action, String module,
-            String entity, String entityId, String detail, String ipAddress, String beforeState, String afterState) {
+    AuditLogEntity(String id, Instant occurredAt, String actorId, String actorLabel, AuditActionType actionType,
+            String action, String module, String entity, String entityId, String detail, String ipAddress,
+            String beforeState, String afterState) {
         this.id = id;
         this.occurredAt = occurredAt;
         this.actorId = actorId;
         this.actorLabel = actorLabel;
+        this.actionType = actionType;
         this.action = action;
         this.module = module;
         this.entity = entity;
@@ -91,6 +100,10 @@ public class AuditLogEntity {
 
     public String getAction() {
         return action;
+    }
+
+    public AuditActionType getActionType() {
+        return actionType;
     }
 
     public String getModule() {

@@ -4,6 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.auth.AuthModels.LoginRequest;
 import com.sigepes.backend.auth.AuthModels.RegisterRequest;
@@ -46,18 +47,20 @@ public class AuthService {
         if (!valid) {
             auditService.recordAs(user == null ? null : user.getId(),
                     user == null ? request.email().trim() : user.getFullName(),
-                    "LOGIN_FAILED", AuditService.MODULE_AUTH, "Usuario", user == null ? null : user.getId(),
+                    AuditActionType.SECURITY, "LOGIN_FAILED", AuditService.MODULE_AUTH, "Usuario",
+                    user == null ? null : user.getId(),
                     "Intento de inicio de sesión fallido para " + request.email().trim(), null, null);
             throw ApiException.of(ErrorCode.INVALID_CREDENTIALS);
         }
         if (user.getStatus() != UserStatus.ACTIVE) {
-            auditService.recordAs(user.getId(), user.getFullName(), "LOGIN_BLOCKED", AuditService.MODULE_AUTH,
-                    "Usuario", user.getId(), "Inicio de sesión de una cuenta suspendida", null, null);
+            auditService.recordAs(user.getId(), user.getFullName(), AuditActionType.SECURITY, "LOGIN_BLOCKED",
+                    AuditService.MODULE_AUTH, "Usuario", user.getId(), "Inicio de sesión de una cuenta suspendida",
+                    null, null);
             throw ApiException.of(ErrorCode.ACCOUNT_SUSPENDED);
         }
 
-        auditService.recordAs(user.getId(), user.getFullName(), "LOGIN", AuditService.MODULE_AUTH, "Usuario",
-                user.getId(), "Inicio de sesión correcto", null, null);
+        auditService.recordAs(user.getId(), user.getFullName(), AuditActionType.SECURITY, "LOGIN",
+                AuditService.MODULE_AUTH, "Usuario", user.getId(), "Inicio de sesión correcto", null, null);
         return sessionFor(user);
     }
 
@@ -66,8 +69,9 @@ public class AuthService {
         UserEntity user = userService.create(request.nationalId(), request.fullName(), request.email(),
                 Role.valueOf(request.role()), request.password(), false);
 
-        auditService.recordAs(user.getId(), user.getFullName(), "USER_REGISTERED", AuditService.MODULE_AUTH,
-                "Usuario", user.getId(), "Auto-registro con rol " + user.getRole(), null, null);
+        auditService.recordAs(user.getId(), user.getFullName(), AuditActionType.CREATE, "USER_REGISTERED",
+                AuditService.MODULE_AUTH, "Usuario", user.getId(), "Auto-registro con rol " + user.getRole(), null,
+                null);
         return sessionFor(user);
     }
 
@@ -80,8 +84,8 @@ public class AuthService {
 
     @Transactional
     public void logout(String userId, String fullName) {
-        auditService.recordAs(userId, fullName, "LOGOUT", AuditService.MODULE_AUTH, "Usuario", userId,
-                "Cierre de sesión", null, null);
+        auditService.recordAs(userId, fullName, AuditActionType.SECURITY, "LOGOUT", AuditService.MODULE_AUTH,
+                "Usuario", userId, "Cierre de sesión", null, null);
     }
 
     private Session sessionFor(UserEntity user) {

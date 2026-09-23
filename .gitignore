@@ -5,6 +5,9 @@
 .vscode/
 .idea/
 .claude/
+.impeccable/
+.github/hooks/
+.github/modernize/
 
 # Sistema operativo
 .DS_Store
