@@ -12,7 +12,9 @@ export interface Vessel {
   ownerId: string;
   ownerName?: string;
   type?: string | null;
-  capacityTons?: number | null;
+  hullType: string;
+  enginePower: number;
+  capacityTons: number;
 }
 
 export interface Gear {
@@ -179,10 +181,17 @@ export const domainService = {
     name: string;
     registration: string;
     port: string;
+    hullType: string;
+    enginePower: number;
+    capacityTons: number;
     gears: string[];
     status?: string;
   }): Promise<Vessel> {
     return (await httpClient.post<Vessel>('/embarcaciones', payload)).data;
+  },
+  /** AC-02.5: perfil completo de una embarcación (usado por el escaneo QR de campo). */
+  async vesselDetail(id: string): Promise<Vessel> {
+    return (await httpClient.get<Vessel>(`/embarcaciones/${id}`)).data;
   },
   async gears(): Promise<Gear[]> {
     return (await httpClient.get<Gear[]>('/artes-pesca')).data;

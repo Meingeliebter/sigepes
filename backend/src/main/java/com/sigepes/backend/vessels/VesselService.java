@@ -2,6 +2,7 @@ package com.sigepes.backend.vessels;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -84,6 +85,8 @@ public class VesselService {
         VesselEntity vessel = new VesselEntity(Ids.generate("emb"), request.name().trim(), registration,
                 request.port().trim(), owner);
         vessel.setVesselType(request.type());
+        vessel.setHullType(request.hullType().trim());
+        vessel.setEnginePower(request.enginePower());
         vessel.setCapacityTons(request.capacityTons());
         if (request.status() != null && !request.status().isBlank()) {
             vessel.setStatus(VesselStatus.valueOf(request.status()));
@@ -91,8 +94,8 @@ public class VesselService {
         vessel.setGears(resolveGears(request.gears()));
 
         VesselEntity saved = repository.save(vessel);
-        auditService.record(AuditActionType.CREATE, "VESSEL_CREATED", AuditService.MODULE_VESSELS, "Embarcación", saved.getId(),
-                "Alta de «" + saved.getName() + "» (matrícula " + saved.getRegistration() + ")");
+        auditService.record(AuditActionType.CREATE, "VESSEL_CREATED", AuditService.MODULE_VESSELS, "Embarcación",
+                saved.getId(), "Alta de «" + saved.getName() + "» (matrícula " + saved.getRegistration() + ")");
         return VesselResponse.from(saved);
     }
 
@@ -149,7 +152,9 @@ public class VesselService {
     }
 
     private static String describe(VesselEntity vessel) {
-        return "status=" + vessel.getStatus() + "; port=" + vessel.getPort() + "; gears="
-                + vessel.getGears().stream().map(FishingGearEntity::getName).sorted().toList();
+        return AuditService.toJson(Map.of(
+                "status", vessel.getStatus().name(),
+                "port", vessel.getPort(),
+                "gears", vessel.getGears().stream().map(FishingGearEntity::getName).sorted().toList()));
     }
 }

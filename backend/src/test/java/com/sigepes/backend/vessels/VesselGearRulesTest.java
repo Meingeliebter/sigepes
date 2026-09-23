@@ -37,11 +37,14 @@ class VesselGearRulesTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"name":"La Sirena","registration":"DIMAR-OK-1","port":"Bahía Solano","gears":["%s"]}"""
+                        {"name":"La Sirena","registration":"DIMAR-OK-1","port":"Bahía Solano","gears":["%s"],
+                        "hullType":"Fibra de vidrio","enginePower":75,"capacityTons":3.5}"""
                         .formatted(allowed.getId())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.gears[0]").value("Nasa test"))
+                .andExpect(jsonPath("$.hullType").value("Fibra de vidrio"))
+                .andExpect(jsonPath("$.enginePower").value(75))
                 .andExpect(jsonPath("$.ownerId").value(fisher.getId()));
     }
 
@@ -51,7 +54,8 @@ class VesselGearRulesTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"name":"Por nombre","registration":"DIMAR-OK-2","port":"Tumaco","gears":["Nasa test"]}"""))
+                        {"name":"Por nombre","registration":"DIMAR-OK-2","port":"Tumaco","gears":["Nasa test"],
+                        "hullType":"Fibra de vidrio","enginePower":75,"capacityTons":3.5}"""))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.gears[0]").value("Nasa test"));
     }
@@ -62,7 +66,8 @@ class VesselGearRulesTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"name":"Ilegal","registration":"DIMAR-NO-1","port":"Tumaco","gears":["%s"]}"""
+                        {"name":"Ilegal","registration":"DIMAR-NO-1","port":"Tumaco","gears":["%s"],
+                        "hullType":"Fibra de vidrio","enginePower":75,"capacityTons":3.5}"""
                         .formatted(prohibited.getId())))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PROHIBITED_GEAR"));
@@ -76,9 +81,40 @@ class VesselGearRulesTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"name":"Repetida","registration":"DIMAR-DUP-1","port":"Tumaco"}"""))
+                        {"name":"Repetida","registration":"DIMAR-DUP-1","port":"Tumaco",
+                        "hullType":"Fibra de vidrio","enginePower":75,"capacityTons":3.5}"""))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("REGISTRATION_ALREADY_REGISTERED"));
+    }
+
+    @Test
+    @DisplayName("AC-02.2: rechaza el registro si falta el tipo de casco, la potencia o la capacidad")
+    void rejectsMissingIdentificationFields() throws Exception {
+        mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"name":"Incompleta","registration":"DIMAR-INC-1","port":"Tumaco"}"""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("AC-02.4: admite los estados Suspended y Decommissioned")
+    void acceptsExtendedStatuses() throws Exception {
+        mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"name":"Suspendida","registration":"DIMAR-SUS-1","port":"Tumaco","status":"SUSPENDED",
+                        "hullType":"Fibra de vidrio","enginePower":75,"capacityTons":3.5}"""))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+
+        mockMvc.perform(post("/api/v1/embarcaciones").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"name":"De baja","registration":"DIMAR-DEC-1","port":"Tumaco","status":"DECOMMISSIONED",
+                        "hullType":"Fibra de vidrio","enginePower":75,"capacityTons":3.5}"""))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DECOMMISSIONED"));
     }
 
     @Test
