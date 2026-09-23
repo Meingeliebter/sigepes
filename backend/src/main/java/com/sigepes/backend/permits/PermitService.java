@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.common.ApiException;
 import com.sigepes.backend.common.ErrorCode;
@@ -116,7 +117,7 @@ public class PermitService {
                 verificationCode(number));
 
         PermitEntity saved = repository.save(permit);
-        auditService.record("PERMIT_REQUESTED", AuditService.MODULE_PERMITS, "Permiso", saved.getId(),
+        auditService.record(AuditActionType.CREATE, "PERMIT_REQUESTED", AuditService.MODULE_PERMITS, "Permiso", saved.getId(),
                 "Solicitud del permiso " + saved.getNumber() + " (" + saved.getType() + ") para "
                         + owner.getFullName());
         return toResponse(saved);

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
@@ -78,7 +79,7 @@ public class SpeciesService {
                         ? SpeciesStatus.ACTIVE
                         : SpeciesStatus.valueOf(request.status())));
 
-        auditService.record("SPECIES_CREATED", AuditService.MODULE_SPECIES, "Especie", species.getId(),
+        auditService.record(AuditActionType.CREATE, "SPECIES_CREATED", AuditService.MODULE_SPECIES, "Especie", species.getId(),
                 "Alta de «" + species.getCommonName() + "» con talla mínima " + species.getMinSizeCm() + " cm");
         return species;
     }

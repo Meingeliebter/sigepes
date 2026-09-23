@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.common.ApiException;
 import com.sigepes.backend.common.ErrorCode;
@@ -124,7 +125,7 @@ public class TripService {
         }
 
         FishingTripEntity saved = repository.save(trip);
-        auditService.record("TRIP_STARTED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
+        auditService.record(AuditActionType.CREATE, "TRIP_STARTED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
                 "Apertura de faena en " + saved.getZone() + " con «" + vessel.getName() + "» al amparo del permiso "
                         + permit.getNumber());
         return TripResponse.from(saved);
@@ -153,7 +154,7 @@ public class TripService {
         trip.addCatch(entry);
 
         FishingTripEntity saved = repository.save(trip);
-        auditService.record("CATCH_ADDED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
+        auditService.record(AuditActionType.CREATE, "CATCH_ADDED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
                 "Captura de «" + species.getCommonName() + "»: " + request.weightKg() + " kg, talla "
                         + request.averageSizeCm() + " cm");
         return TripResponse.from(saved);
@@ -183,7 +184,7 @@ public class TripService {
         }
 
         FishingTripEntity saved = repository.save(trip);
-        auditService.record("TRIP_CLOSED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
+        auditService.record(AuditActionType.UPDATE, "TRIP_CLOSED", AuditService.MODULE_TRIPS, "Faena", saved.getId(),
                 nullDeclaration
                         ? "Cierre con declaración de captura nula"
                         : "Cierre con " + saved.getCatches().size() + " captura(s) registrada(s)");
@@ -249,7 +250,7 @@ public class TripService {
                 trip = close(trip.id(), new CloseTripRequest(
                         Boolean.TRUE.equals(item.nullDeclaration()), null, null));
             }
-            auditService.record("TRIP_SYNCHRONIZED", AuditService.MODULE_TRIPS, "Faena", trip.id(),
+            auditService.record(AuditActionType.CREATE, "TRIP_SYNCHRONIZED", AuditService.MODULE_TRIPS, "Faena", trip.id(),
                     "Sincronización de una faena registrada sin conexión");
             result.add(trip);
         }
