@@ -24,7 +24,9 @@ import com.sigepes.backend.gears.FishingGearRepository;
 import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitRepository;
 import com.sigepes.backend.permits.PermitStatus;
+import com.sigepes.backend.species.MeasurementMethod;
 import com.sigepes.backend.species.SpeciesEntity;
+import com.sigepes.backend.species.SpeciesRegion;
 import com.sigepes.backend.species.SpeciesRepository;
 import com.sigepes.backend.species.SpeciesStatus;
 import com.sigepes.backend.users.Role;
@@ -84,7 +86,8 @@ class TripWithoutAmbientTransactionTest {
         newVessel.setCapacityTons(new BigDecimal("5.00"));
         vessel = vesselRepository.save(newVessel);
         species = speciesRepository.save(new SpeciesEntity(Ids.generate("esp"), "Pargo sin tx", "Lutjanus notx",
-                new BigDecimal("35.00"), SpeciesStatus.ACTIVE));
+                new BigDecimal("35.00"), SpeciesStatus.ACTIVE, MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.AMBAS,
+                "https://placehold.co/400x300?text=Especie"));
         permitRepository.save(new PermitEntity(Ids.generate("per"), "PES-NOTX-1", "Pesca artesanal",
                 fisher.getFullName(), fisher, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(6),
                 PermitStatus.APPROVED, "SIGEPES-NOTX-1"));

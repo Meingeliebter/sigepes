@@ -203,7 +203,9 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/especies").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"commonName":"Falsa","scientificName":"Falsus falsus","minSizeCm":10}"""))
+                        {"commonName":"Falsa","scientificName":"Falsus falsus","minSizeCm":10,
+                        "measurementMethod":"TOTAL_LENGTH","region":"AMBAS",
+                        "imageUrl":"https://example.org/falsa.jpg"}"""))
                 .andExpect(status().isForbidden());
 
         var species = givenSpecies("Especie protegida", new BigDecimal("20.00"));

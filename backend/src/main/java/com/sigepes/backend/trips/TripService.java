@@ -150,7 +150,7 @@ public class TripService {
         compliance.requireMinimumSize(species, request.averageSizeCm());
 
         CatchEntity entry = new CatchEntity(Ids.orGenerate(request.id(), "cap"), species, request.quantity(),
-                request.weightKg(), request.averageSizeCm());
+                request.weightKg(), request.averageSizeCm(), species.getMinSizeCm());
         trip.addCatch(entry);
 
         FishingTripEntity saved = repository.save(trip);
