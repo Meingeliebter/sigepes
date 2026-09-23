@@ -196,6 +196,9 @@ export const domainService = {
   async gears(): Promise<Gear[]> {
     return (await httpClient.get<Gear[]>('/artes-pesca')).data;
   },
+  async createGear(payload: { name: string; description?: string; destructive: boolean; status?: string }): Promise<Gear> {
+    return (await httpClient.post<Gear>('/artes-pesca', payload)).data;
+  },
 
   // --- Especies y vedas (RF-06 / RF-05) -------------------------------
   async species(): Promise<Species[]> {
