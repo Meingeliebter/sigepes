@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
 import com.sigepes.backend.closures.ClosureStatus;
+import com.sigepes.backend.closures.ClosureType;
 import com.sigepes.backend.gears.FishingGearEntity;
 import com.sigepes.backend.gears.FishingGearRepository;
 import com.sigepes.backend.gears.GearStatus;
@@ -179,7 +180,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private ClosureEntity closure(SpeciesEntity species, String zone, LocalDate from, LocalDate to, String reason,
             UserEntity createdBy) {
         ClosureEntity closure = new ClosureEntity(prefixedId("ved", species.getCommonName() + zone), species, zone,
-                from, to, ClosureStatus.SCHEDULED);
+                from, to, ClosureStatus.SCHEDULED, "AUNAP-DEMO-0001", ClosureType.TOTAL);
         closure.setStatus(closure.effectiveStatus(LocalDate.now()));
         closure.setReason(reason);
         closure.setNotes("Registro DEMO de veda.");
