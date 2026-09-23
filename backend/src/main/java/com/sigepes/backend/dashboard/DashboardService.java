@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sigepes.backend.audit.AuditLogEntity;
+import com.sigepes.backend.audit.AuditLogRepository;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
@@ -100,6 +101,13 @@ public class DashboardService {
         if (!closures.isEmpty()) {
             alerts.add(closures.size() + " veda(s) vigente(s) en este momento.");
         }
+        // AC-20.5: incidente de seguridad, visible solo para ADMIN (no toda "autoridad").
+        if (actor.isAdmin()) {
+            List<AuditLogRepository.SuspiciousIp> suspicious = auditService.suspiciousLoginIps();
+            if (!suspicious.isEmpty()) {
+                alerts.add(suspicious.size() + " IP(s) con actividad sospechosa de inicio de sesión.");
+            }
+        }
         if (alerts.isEmpty()) {
             alerts.add("Sin alertas de cumplimiento en este momento.");
         }
@@ -148,7 +156,7 @@ public class DashboardService {
     }
 
     private List<ActivityResponse> recentActivity(String ownerId) {
-        return auditService.latest(null, 40).stream()
+        return auditService.search(null, null, null, null, null, 40).stream()
                 .filter(entry -> ownerId == null || ownerId.equals(entry.getActorId()))
                 .filter(entry -> !"LOGIN".equals(entry.getAction()))
                 .limit(6)
