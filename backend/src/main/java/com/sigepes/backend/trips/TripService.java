@@ -146,7 +146,7 @@ public class TripService {
 
         SpeciesEntity species = speciesService.byId(request.speciesId());
         compliance.requireActiveSpecies(species);
-        compliance.requireNoClosure(species, trip.getTripDate(), trip.getZone());
+        compliance.requireNoClosure(species, trip.getTripDate(), trip.getZone(), trip.getPermit());
         compliance.requireMinimumSize(species, request.averageSizeCm());
 
         CatchEntity entry = new CatchEntity(Ids.orGenerate(request.id(), "cap"), species, request.quantity(),

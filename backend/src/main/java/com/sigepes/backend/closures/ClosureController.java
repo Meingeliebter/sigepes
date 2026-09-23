@@ -1,6 +1,5 @@
 package com.sigepes.backend.closures;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sigepes.backend.closures.ClosureDtos.ClosureResponse;
 import com.sigepes.backend.closures.ClosureDtos.CreateClosureRequest;
 import com.sigepes.backend.closures.ClosureDtos.UpdateClosureRequest;
+import com.sigepes.backend.common.AppClock;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,13 +51,13 @@ public class ClosureController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Declara una veda para una especie, zona y periodo")
     public ClosureResponse create(@Valid @RequestBody CreateClosureRequest request) {
-        return ClosureResponse.from(closureService.create(request), LocalDate.now());
+        return ClosureResponse.from(closureService.create(request), AppClock.today());
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','ANALYST','INSPECTOR')")
     @Operation(summary = "Reprograma o levanta una veda")
     public ClosureResponse update(@PathVariable String id, @Valid @RequestBody UpdateClosureRequest request) {
-        return ClosureResponse.from(closureService.update(id, request), LocalDate.now());
+        return ClosureResponse.from(closureService.update(id, request), AppClock.today());
     }
 }

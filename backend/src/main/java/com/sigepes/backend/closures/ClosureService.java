@@ -2,6 +2,7 @@ package com.sigepes.backend.closures;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import com.sigepes.backend.closures.ClosureDtos.ClosureResponse;
 import com.sigepes.backend.closures.ClosureDtos.CreateClosureRequest;
 import com.sigepes.backend.closures.ClosureDtos.UpdateClosureRequest;
 import com.sigepes.backend.common.ApiException;
+import com.sigepes.backend.common.AppClock;
 import com.sigepes.backend.common.ErrorCode;
 import com.sigepes.backend.common.Ids;
 import com.sigepes.backend.security.CurrentUser;
@@ -41,7 +43,7 @@ public class ClosureService {
     /** Todas las vedas, para la pantalla de vedas. */
     @Transactional(readOnly = true)
     public List<ClosureResponse> findAll() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         return repository.findAllByOrderByStartDateDesc().stream()
                 .map(closure -> ClosureResponse.from(closure, today))
                 .toList();
@@ -50,7 +52,7 @@ public class ClosureService {
     /** Solo las vedas vigentes hoy, para la validación previa del formulario de faena. */
     @Transactional(readOnly = true)
     public List<ClosureResponse> findInForce() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         return repository.findInForceOn(today).stream()
                 .map(closure -> ClosureResponse.from(closure, today))
                 .toList();
@@ -70,16 +72,17 @@ public class ClosureService {
         SpeciesEntity species = speciesService.byId(request.speciesId());
 
         ClosureEntity closure = new ClosureEntity(Ids.generate("ved"), species, request.zone().trim(),
-                request.from(), request.to(), ClosureStatus.SCHEDULED);
-        closure.setStatus(closure.effectiveStatus(LocalDate.now()));
+                request.from(), request.to(), ClosureStatus.SCHEDULED, request.resolutionNumber().trim(),
+                ClosureType.valueOf(request.closureType()));
+        closure.setStatus(closure.effectiveStatus(AppClock.today()));
         closure.setReason(request.reason());
         closure.setNotes(request.notes());
         currentUser.find().ifPresent(user -> closure.setCreatedBy(userService.byId(user.id())));
 
         ClosureEntity saved = repository.save(closure);
-        auditService.record(AuditActionType.CREATE, "CLOSURE_CREATED", AuditService.MODULE_CLOSURES, "Veda", saved.getId(),
-                "Veda de «" + species.getCommonName() + "» en " + saved.getZone() + " del " + saved.getStartDate()
-                        + " al " + saved.getEndDate());
+        auditService.record(AuditActionType.CREATE, "CLOSURE_CREATED", AuditService.MODULE_CLOSURES, "Veda",
+                saved.getId(), "Veda de «" + species.getCommonName() + "» en " + saved.getZone() + " del "
+                        + saved.getStartDate() + " al " + saved.getEndDate());
         return saved;
     }
 
@@ -99,9 +102,15 @@ public class ClosureService {
         if (request.notes() != null) {
             closure.setNotes(request.notes());
         }
+        if (request.resolutionNumber() != null && !request.resolutionNumber().isBlank()) {
+            closure.setResolutionNumber(request.resolutionNumber().trim());
+        }
+        if (request.closureType() != null && !request.closureType().isBlank()) {
+            closure.setClosureType(ClosureType.valueOf(request.closureType()));
+        }
         closure.setStatus(request.status() != null && !request.status().isBlank()
                 ? ClosureStatus.valueOf(request.status())
-                : closure.effectiveStatus(LocalDate.now()));
+                : closure.effectiveStatus(AppClock.today()));
 
         ClosureEntity saved = repository.save(closure);
         auditService.recordChange("CLOSURE_UPDATED", AuditService.MODULE_CLOSURES, "Veda", saved.getId(),
@@ -110,7 +119,12 @@ public class ClosureService {
     }
 
     private static String describe(ClosureEntity closure) {
-        return "zone=" + closure.getZone() + "; from=" + closure.getStartDate() + "; to=" + closure.getEndDate()
-                + "; status=" + closure.getStatus();
+        return AuditService.toJson(Map.of(
+                "zone", closure.getZone(),
+                "from", closure.getStartDate().toString(),
+                "to", closure.getEndDate().toString(),
+                "status", closure.getStatus().name(),
+                "closureType", closure.getClosureType().name(),
+                "resolutionNumber", closure.getResolutionNumber()));
     }
 }

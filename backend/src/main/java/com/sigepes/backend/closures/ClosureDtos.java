@@ -32,6 +32,8 @@ public final class ClosureDtos {
             String status,
             boolean inForce,
             String reason,
+            String resolutionNumber,
+            String closureType,
             String notes) {
 
         public static ClosureResponse from(ClosureEntity entity, LocalDate today) {
@@ -49,6 +51,8 @@ public final class ClosureDtos {
                     entity.effectiveStatus(today).name(),
                     entity.blocks(today, entity.getZone()),
                     entity.getReason(),
+                    entity.getResolutionNumber(),
+                    entity.getClosureType().name(),
                     entity.getNotes());
         }
     }
@@ -70,6 +74,14 @@ public final class ClosureDtos {
             @Size(max = 400, message = "El motivo no puede superar 400 caracteres")
             String reason,
 
+            @NotBlank(message = "El número de resolución es obligatorio")
+            @Size(max = 120, message = "El número de resolución no puede superar 120 caracteres")
+            String resolutionNumber,
+
+            @NotBlank(message = "El tipo de veda es obligatorio")
+            @Pattern(regexp = "TOTAL|PARTIAL", message = "El tipo de veda no es válido")
+            String closureType,
+
             @Size(max = 400, message = "Las observaciones no pueden superar 400 caracteres")
             String notes) {
     }
@@ -82,6 +94,12 @@ public final class ClosureDtos {
             LocalDate from,
 
             LocalDate to,
+
+            @Size(max = 120, message = "El número de resolución no puede superar 120 caracteres")
+            String resolutionNumber,
+
+            @Pattern(regexp = "TOTAL|PARTIAL", message = "El tipo de veda no es válido")
+            String closureType,
 
             @Size(max = 400, message = "Las observaciones no pueden superar 400 caracteres")
             String notes) {
