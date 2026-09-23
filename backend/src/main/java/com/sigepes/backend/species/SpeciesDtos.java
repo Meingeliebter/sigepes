@@ -1,6 +1,7 @@
 package com.sigepes.backend.species;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +25,9 @@ public final class SpeciesDtos {
             String commonName,
             String scientificName,
             BigDecimal minSizeCm,
+            String measurementMethod,
+            String region,
+            String imageUrl,
             String status,
             boolean underClosure) {
 
@@ -32,7 +36,29 @@ public final class SpeciesDtos {
                     ? SpeciesStatus.CLOSED.name()
                     : entity.getStatus().name();
             return new SpeciesResponse(entity.getId(), entity.getCommonName(), entity.getScientificName(),
-                    entity.getMinSizeCm(), status, underClosure);
+                    entity.getMinSizeCm(), entity.getMeasurementMethod().name(), entity.getRegion().name(),
+                    entity.getImageUrl(), status, underClosure);
+        }
+    }
+
+    /** AC-06.4: una fila del historial de versiones de una especie. */
+    public record SpeciesVersionResponse(
+            int version,
+            String commonName,
+            String scientificName,
+            BigDecimal minSizeCm,
+            String measurementMethod,
+            String region,
+            String imageUrl,
+            String status,
+            String changedByLabel,
+            Instant changedAt) {
+
+        public static SpeciesVersionResponse from(SpeciesVersionEntity entity) {
+            return new SpeciesVersionResponse(entity.getVersion(), entity.getCommonName(),
+                    entity.getScientificName(), entity.getMinSizeCm(), entity.getMeasurementMethod().name(),
+                    entity.getRegion().name(), entity.getImageUrl(), entity.getStatus().name(),
+                    entity.getChangedByLabel(), entity.getChangedAt());
         }
     }
 
@@ -49,6 +75,18 @@ public final class SpeciesDtos {
             @DecimalMin(value = "0.1", message = "La talla mínima debe ser mayor que cero")
             BigDecimal minSizeCm,
 
+            @NotBlank(message = "El método de medición es obligatorio")
+            @Pattern(regexp = "TOTAL_LENGTH|FORK_LENGTH", message = "El método de medición no es válido")
+            String measurementMethod,
+
+            @NotBlank(message = "La región es obligatoria")
+            @Pattern(regexp = "PACIFICO|CARIBE|AMBAS", message = "La región no es válida")
+            String region,
+
+            @NotBlank(message = "La imagen de referencia es obligatoria")
+            @Size(max = 500, message = "La URL de la imagen no puede superar 500 caracteres")
+            String imageUrl,
+
             @Pattern(regexp = "ACTIVE|CLOSED|INACTIVE", message = "El estado no es válido")
             String status) {
     }
@@ -63,6 +101,15 @@ public final class SpeciesDtos {
 
             @DecimalMin(value = "0.1", message = "La talla mínima debe ser mayor que cero")
             BigDecimal minSizeCm,
+
+            @Pattern(regexp = "TOTAL_LENGTH|FORK_LENGTH", message = "El método de medición no es válido")
+            String measurementMethod,
+
+            @Pattern(regexp = "PACIFICO|CARIBE|AMBAS", message = "La región no es válida")
+            String region,
+
+            @Size(max = 500, message = "La URL de la imagen no puede superar 500 caracteres")
+            String imageUrl,
 
             @Pattern(regexp = "ACTIVE|CLOSED|INACTIVE", message = "El estado no es válido")
             String status) {
