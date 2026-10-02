@@ -10,13 +10,13 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PeopleIcon from '@mui/icons-material/People';
 import PhishingIcon from '@mui/icons-material/Phishing';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
-import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import {
-  Alert, AppBar, Box, Button, Chip, Drawer, IconButton, List, ListItemButton,
-  ListItemIcon, ListItemText, ListSubheader, Toolbar, Typography, useMediaQuery, useTheme,
+  Alert, AppBar, Avatar, Box, Button, Drawer, IconButton, List, ListItemButton,
+  ListItemIcon, ListItemText, ListSubheader, Stack, Toolbar, Tooltip, Typography, useMediaQuery, useTheme,
   BottomNavigation, BottomNavigationAction,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -30,11 +30,14 @@ import { Logotype } from '../../shared/components/Logotype';
 import { SkipLink } from '../../shared/components/SkipLink';
 import { TopUtilityBar } from '../../shared/components/TopUtilityBar';
 import { useOnlineStatus } from '../../shared/hooks/useOnlineStatus';
-import { NAV_GROUPS, NAV_ITEMS } from '../../shared/permissions/navigation';
+import { NAV_GROUPS, NAV_ITEMS, matchNavItem } from '../../shared/permissions/navigation';
 import { pendingTripCount } from '../../shared/storage/tripOfflineStore';
 import { syncPendingTrips } from '../../shared/sync/tripSync';
+import { glass } from '../../shared/theme/theme';
 
-const WIDTH = 272;
+const WIDTH = 264;
+const BAR_HEIGHT = 64;
+const GUTTER = 16;
 
 const ICONS: Record<string, ReactNode> = {
   dashboard: <DashboardIcon />,
@@ -48,6 +51,12 @@ const ICONS: Record<string, ReactNode> = {
   history: <HistoryIcon />,
   qrcode: <QrCode2Icon />,
 };
+
+function initials(name?: string) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
 
 export function AppLayout() {
   const theme = useTheme();
@@ -64,6 +73,7 @@ export function AppLayout() {
 
   const items = NAV_ITEMS.filter((item) => (user ? item.roles.includes(user.role) : false));
   const mobileItems = items.slice(0, 5);
+  const activePath = matchNavItem(location.pathname, items)?.path;
 
   useEffect(() => {
     const refreshPending = () => setPending(pendingTripCount());
@@ -85,107 +95,168 @@ export function AppLayout() {
     setOpen(false);
   };
 
-  const drawer = (
-    <Box sx={{ width: WIDTH, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2.5 }}>
-        <Logotype size={36} />
+  const signOut = () => {
+    void authService.logout().finally(() => {
+      logout();
+      void navigate('/login');
+    });
+  };
+
+  const navList = (
+    <List sx={{ px: 1.5, py: 1, flex: 1, overflowY: 'auto' }} aria-label="Módulos del sistema">
+      {NAV_GROUPS.map((group) => {
+        const groupItems = items.filter((item) => item.group === group);
+        if (groupItems.length === 0) return null;
+        return (
+          <li key={group}>
+            <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+              <ListSubheader disableSticky sx={{ px: 1.5, mt: 1 }}>{group}</ListSubheader>
+              {groupItems.map((item) => {
+                const active = item.path === activePath;
+                return (
+                  <ListItemButton
+                    key={item.path}
+                    selected={active}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={() => go(item.path)}
+                    sx={{ mb: 0.5, minHeight: 44, px: 1.5 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>{ICONS[item.icon]}</ListItemIcon>
+                    <ListItemText primary={item.label} slotProps={{ primary: { variant: 'body2', fontWeight: 600 } }} />
+                  </ListItemButton>
+                );
+              })}
+            </ul>
+          </li>
+        );
+      })}
+    </List>
+  );
+
+  /** Identidad del usuario al pie del panel lateral: quién opera y con qué rol. */
+  const identity = user && (
+    <Stack
+      direction="row"
+      spacing={1.5}
+      alignItems="center"
+      sx={{ m: 1.5, p: 1.25, borderRadius: 3, bgcolor: alpha(theme.palette.primary.main, 0.05) }}
+    >
+      <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '.85rem', fontWeight: 700 }}>
+        {initials(user.fullName)}
+      </Avatar>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography variant="body2" fontWeight={700} noWrap>{user.fullName}</Typography>
+        <Typography variant="caption" color="secondary.dark" fontWeight={650}>{ROLE_LABEL[user.role]}</Typography>
       </Box>
-      <List sx={{ px: 1.5, flex: 1, overflowY: 'auto' }}>
-        {NAV_GROUPS.map((group) => {
-          const groupItems = items.filter((item) => item.group === group);
-          if (groupItems.length === 0) return null;
-          return (
-            <li key={group}>
-              <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-                <ListSubheader disableSticky>{group}</ListSubheader>
-                {groupItems.map((item) => {
-                  const active = location.pathname.startsWith(item.path);
-                  return (
-                    <ListItemButton key={item.path} selected={active} onClick={() => go(item.path)} sx={{ mb: 0.5 }}>
-                      <ListItemIcon sx={{ minWidth: 40 }}>{ICONS[item.icon]}</ListItemIcon>
-                      <ListItemText primary={item.label} />
-                    </ListItemButton>
-                  );
-                })}
-              </ul>
-            </li>
-          );
-        })}
-      </List>
-    </Box>
+      <Tooltip title="Cerrar sesión">
+        <IconButton size="small" onClick={signOut} aria-label="Cerrar sesión">
+          <LogoutIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+
+  const connection = (
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      role="status"
+      sx={{
+        px: 1.5,
+        height: 32,
+        borderRadius: 999,
+        border: '1px solid rgba(255,255,255,.16)',
+        bgcolor: 'rgba(255,255,255,.06)',
+        display: { xs: 'none', sm: 'flex' },
+      }}
+    >
+      <Box
+        sx={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          bgcolor: online ? '#5FD39A' : '#FFB454',
+          boxShadow: online ? '0 0 0 3px rgba(95,211,154,.22)' : '0 0 0 3px rgba(255,180,84,.22)',
+        }}
+      />
+      <Typography variant="caption" fontWeight={650} sx={{ color: 'rgba(255,255,255,.9)' }}>
+        {online ? 'En línea' : 'Sin conexión'}
+      </Typography>
+    </Stack>
   );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SkipLink />
+      <TopUtilityBar />
 
-      <Box sx={{ position: 'sticky', top: 0, zIndex: theme.zIndex.appBar }}>
-        <TopUtilityBar />
-        <AppBar position="static">
-          <Toolbar>
-            {!desktop && (
-              <IconButton color="inherit" edge="start" onClick={() => setOpen(true)} aria-label="Abrir menú de navegación" sx={{ mr: 1 }}>
-                <MenuIcon />
-              </IconButton>
-            )}
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-              <Logotype variant="light" size={32} showTagline={desktop} compact={!desktop} />
-            </Box>
+      <AppBar position="sticky" sx={{ top: 0 }}>
+        <Toolbar sx={{ minHeight: BAR_HEIGHT, gap: 1.5 }}>
+          {!desktop && (
+            <IconButton color="inherit" edge="start" onClick={() => setOpen(true)} aria-label="Abrir menú de navegación">
+              <MenuIcon />
+            </IconButton>
+          )}
+          <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+            <Logotype variant="light" size={32} showTagline={desktop} compact={!desktop} />
+          </Box>
+          {connection}
+          <Tooltip title="Notificaciones">
             <IconButton
               color="inherit"
               aria-label="Ver notificaciones"
               onClick={() => go('/app/notifications')}
-              sx={{ display: { xs: 'none', sm: 'inline-flex' }, mr: 1 }}
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             >
               <NotificationsIcon />
             </IconButton>
-            <Chip
-              icon={online ? <WifiIcon /> : <WifiOffIcon />}
-              label={online ? 'En línea' : 'Sin conexión'}
-              color={online ? 'success' : 'warning'}
-              size="small"
-              sx={{ mr: 1, display: { xs: 'none', sm: 'inline-flex' }, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }}
-            />
-            {user && (
-              <Chip
-                label={ROLE_LABEL[user.role]}
-                size="small"
-                sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, bgcolor: 'secondary.main', color: '#fff' }}
-              />
-            )}
-            <Typography sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>{user?.fullName}</Typography>
-            <Button
-              color="inherit"
-              startIcon={<LogoutIcon />}
-              onClick={() => {
-                void authService.logout().finally(() => {
-                  logout();
-                  void navigate('/login');
-                });
-              }}
-            >
+          </Tooltip>
+          {!desktop && (
+            <Button color="inherit" startIcon={<LogoutIcon />} onClick={signOut}>
               Salir
             </Button>
-          </Toolbar>
-        </AppBar>
-      </Box>
+          )}
+        </Toolbar>
+      </AppBar>
 
-      <Box sx={{ display: 'flex', flex: 1 }}>
+      <Box sx={{ display: 'flex', flex: 1, alignItems: 'flex-start' }}>
         {desktop ? (
-          <Drawer
-            variant="permanent"
-            sx={{ width: WIDTH, flexShrink: 0, '& .MuiDrawer-paper': { width: WIDTH, position: 'sticky', top: 0, height: '100vh' } }}
+          <Box
+            component="nav"
+            aria-label="Navegación principal"
+            sx={{
+              ...glass.paneStrong,
+              width: WIDTH,
+              flexShrink: 0,
+              position: 'sticky',
+              top: BAR_HEIGHT + GUTTER,
+              m: `${GUTTER}px`,
+              mr: 0,
+              height: `calc(100vh - ${BAR_HEIGHT + GUTTER * 2}px)`,
+              borderRadius: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
           >
-            {drawer}
-          </Drawer>
+            {navList}
+            {identity}
+          </Box>
         ) : (
-          <Drawer open={open} onClose={() => setOpen(false)}>
-            {drawer}
+          <Drawer open={open} onClose={() => setOpen(false)} slotProps={{ paper: { sx: { borderRadius: '0 20px 20px 0' } } }}>
+            <Box sx={{ width: WIDTH + 16, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ p: 2.5, pb: 1 }}>
+                <Logotype size={36} />
+              </Box>
+              {navList}
+              {identity}
+            </Box>
           </Drawer>
         )}
 
-        <Box component="main" id="main-content" sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ flex: 1, p: { xs: 2, md: 4 }, pb: { xs: 12, md: 4 } }}>
+        <Box component="main" id="main-content" sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: `calc(100vh - ${BAR_HEIGHT}px)` }}>
+          <Box sx={{ flex: 1, width: '100%', maxWidth: 1440, mx: 'auto', p: { xs: 2, md: 4 }, pt: { xs: 2, md: 3 }, pb: { xs: 13, md: 6 } }}>
             <AppBreadcrumbs />
             {(!online || pending > 0) && (
               <Alert
@@ -200,18 +271,18 @@ export function AppLayout() {
             )}
             <Outlet />
           </Box>
-          {desktop && <Footer />}
+          {desktop && <Footer compact />}
         </Box>
       </Box>
 
       {!desktop && (
         <BottomNavigation
-          value={mobileItems.findIndex((item) => location.pathname.startsWith(item.path))}
+          value={mobileItems.findIndex((item) => item.path === activePath)}
           onChange={(_, index) => go(mobileItems[index].path)}
           sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: theme.zIndex.appBar }}
         >
           {mobileItems.map((item) => (
-            <BottomNavigationAction key={item.path} label={item.label} icon={ICONS[item.icon]} />
+            <BottomNavigationAction key={item.path} label={item.label.split(' ')[0]} aria-label={item.label} icon={ICONS[item.icon]} />
           ))}
         </BottomNavigation>
       )}

@@ -12,7 +12,7 @@ import { useAuthStore } from '../store/authStore';
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <Typography variant="overline" color="secondary.dark" sx={{ display: 'block', mt: 1 }}>
+    <Typography variant="subtitle2" component="h2" color="primary.dark" sx={{ display: 'block', mt: 1.5, pb: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}>
       {children}
     </Typography>
   );

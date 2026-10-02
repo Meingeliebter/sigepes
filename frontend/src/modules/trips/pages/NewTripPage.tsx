@@ -1,15 +1,28 @@
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { PageContainer } from '@/shared/components/PageContainer';
-import { Alert, AlertTitle, Button, Checkbox, CircularProgress, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Button, Checkbox, CircularProgress, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { domainService } from '@/shared/api/domain.service';
 import { toAppError } from '@/shared/errors/AppError';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import { useAuthStore } from '../../auth/store/authStore';
 import { savePendingTrip } from '@/shared/storage/tripOfflineStore';
+
+/** Bloque del formulario con su título; agrupa los campos como los apartados de la bitácora en papel. */
+function FormSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Stack component="fieldset" spacing={2} sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}>
+      <Typography component="legend" variant="subtitle1" sx={{ fontWeight: 750, color: 'primary.dark', mb: 2, p: 0 }}>
+        {title}
+      </Typography>
+      {children}
+    </Stack>
+  );
+}
 
 export function NewTripPage() {
   const navigate = useNavigate();
@@ -156,8 +169,8 @@ export function NewTripPage() {
     (!nullDeclaration && (!speciesId || !quantity || !weightKg || !averageSizeCm || Boolean(blockedByClosure || blockedBySize)));
 
   return (
-    <PageContainer title="Nueva faena" subtitle="Registro con validación de permiso, veda y talla mínima">
-      <Stack spacing={2}>
+    <PageContainer title="Nueva faena" subtitle="Registro con validación de permiso, veda y talla mínima" maxWidth={880}>
+      <Stack spacing={3}>
         {!online && <Alert severity="info">Modo offline activo. La sincronización se habilitará al recuperar conexión.</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
         {info && <Alert severity="warning">{info}</Alert>}
@@ -165,60 +178,92 @@ export function NewTripPage() {
         {!vesselsQuery.isLoading && (vesselsQuery.data?.length ?? 0) === 0 && (
           <Alert severity="warning">Necesitas registrar una embarcación antes de abrir una faena.</Alert>
         )}
-        <FormControl fullWidth>
-          <InputLabel>Embarcación</InputLabel>
-          <Select value={vesselId} label="Embarcación" onChange={(event) => selectVessel(event.target.value)}>
-            {vesselsQuery.data?.map((vessel) => <MenuItem key={vessel.id} value={vessel.id}>{vessel.name} · {vessel.registration}</MenuItem>)}
-          </Select>
-        </FormControl>
-        <TextField label="Puerto de origen" value={originPort} onChange={(event) => setOriginPort(event.target.value)} />
-        <TextField label="Zona de faena" value={zone} onChange={(event) => setZone(event.target.value)} />
-        <FormControlLabel control={<Checkbox checked={nullDeclaration} onChange={(event) => setNullDeclaration(event.target.checked)} />} label="Declaración de captura nula" />
-        {nullDeclaration && <Alert severity="info">La faena quedará cerrada sin capturas con declaración nula.</Alert>}
-        {!nullDeclaration && <>
-        <FormControl fullWidth>
-          <InputLabel>Especie</InputLabel>
-          <Select value={speciesId} label="Especie" onChange={(event) => setSpeciesId(event.target.value)}>
-            {speciesQuery.data?.map((item) => <MenuItem key={item.id} value={item.id}>{item.commonName} · mínima {item.minSizeCm} cm</MenuItem>)}
-          </Select>
-        </FormControl>
-        {activeClosure && (
-          <Alert severity="error" variant="filled" icon={<ReportProblemIcon fontSize="large" />} sx={{ '& .MuiAlert-message': { width: '100%' } }}>
-            <AlertTitle sx={{ fontWeight: 700 }}>
-              {activeClosure.closureType === 'TOTAL' ? 'Veda total activa' : 'Veda parcial activa'}
-            </AlertTitle>
-            <Typography variant="body2">
-              <strong>{activeClosure.species}</strong> está en veda en {activeClosure.zone} del {activeClosure.from} al{' '}
-              {activeClosure.to} (Resolución {activeClosure.resolutionNumber}).
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              {activeClosure.closureType === 'TOTAL'
-                ? 'Prohibida para todo tipo de pesca: no puedes registrar esta captura.'
-                : 'Permitida únicamente para pesca artesanal de subsistencia; el sistema validará tu permiso al guardar.'}
-            </Typography>
-          </Alert>
-        )}
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Conteo individual" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
-          <TextField label="Peso (kg)" type="number" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} />
-          <TextField label="Talla promedio (cm)" type="number" value={averageSizeCm} onChange={(event) => setAverageSizeCm(event.target.value)} error={blockedBySize} helperText={blockedBySize ? `Mínimo legal: ${selectedSpecies?.minSizeCm} cm` : ''} />
+
+        <FormSection title="Embarcación y zona">
+          <FormControl fullWidth>
+            <InputLabel id="trip-vessel-label">Embarcación</InputLabel>
+            <Select labelId="trip-vessel-label" value={vesselId} label="Embarcación" onChange={(event) => selectVessel(event.target.value)}>
+              {vesselsQuery.data?.map((vessel) => <MenuItem key={vessel.id} value={vessel.id}>{vessel.name} · {vessel.registration}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Puerto de origen" value={originPort} onChange={(event) => setOriginPort(event.target.value)} />
+            <TextField label="Zona de faena" value={zone} onChange={(event) => setZone(event.target.value)} />
+          </Stack>
+        </FormSection>
+
+        <FormSection title="Captura">
+          <FormControlLabel control={<Checkbox checked={nullDeclaration} onChange={(event) => setNullDeclaration(event.target.checked)} />} label="Declaración de captura nula" />
+          {nullDeclaration && <Alert severity="info">La faena quedará cerrada sin capturas con declaración nula.</Alert>}
+          {!nullDeclaration && <>
+          <FormControl fullWidth>
+            <InputLabel id="trip-species-label">Especie</InputLabel>
+            <Select labelId="trip-species-label" value={speciesId} label="Especie" onChange={(event) => setSpeciesId(event.target.value)}>
+              {speciesQuery.data?.map((item) => <MenuItem key={item.id} value={item.id}>{item.commonName} · mínima {item.minSizeCm} cm</MenuItem>)}
+            </Select>
+          </FormControl>
+          {activeClosure && (
+            <Alert severity="error" variant="filled" icon={<ReportProblemIcon fontSize="large" />} sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+              <AlertTitle sx={{ fontWeight: 700 }}>
+                {activeClosure.closureType === 'TOTAL' ? 'Veda total activa' : 'Veda parcial activa'}
+              </AlertTitle>
+              <Typography variant="body2">
+                <strong>{activeClosure.species}</strong> está en veda en {activeClosure.zone} del {activeClosure.from} al{' '}
+                {activeClosure.to} (Resolución {activeClosure.resolutionNumber}).
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                {activeClosure.closureType === 'TOTAL'
+                  ? 'Prohibida para todo tipo de pesca: no puedes registrar esta captura.'
+                  : 'Permitida únicamente para pesca artesanal de subsistencia; el sistema validará tu permiso al guardar.'}
+              </Typography>
+            </Alert>
+          )}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Conteo individual" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+            <TextField label="Peso (kg)" type="number" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} />
+            <TextField
+              label="Talla promedio (cm)"
+              type="number"
+              value={averageSizeCm}
+              onChange={(event) => setAverageSizeCm(event.target.value)}
+              error={blockedBySize}
+              helperText={selectedSpecies ? `Mínimo legal: ${selectedSpecies.minSizeCm} cm` : ' '}
+            />
+          </Stack>
+          </>}
+        </FormSection>
+
+        <FormSection title="Desembarco">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'flex-start' }}>
+            <TextField label="Latitud" type="number" value={landingLatitude} onChange={(event) => setLandingLatitude(event.target.value)} />
+            <TextField label="Longitud" type="number" value={landingLongitude} onChange={(event) => setLandingLongitude(event.target.value)} />
+            <Button
+              variant="outlined"
+              onClick={useMyLocation}
+              disabled={locating}
+              startIcon={locating ? <CircularProgress size={18} /> : <MyLocationIcon />}
+              sx={{ flexShrink: 0, whiteSpace: 'nowrap', minHeight: 56 }}
+            >
+              Usar mi ubicación
+            </Button>
+          </Stack>
+        </FormSection>
+
+        <Stack
+          direction={{ xs: 'column-reverse', sm: 'row' }}
+          spacing={1.5}
+          justifyContent="space-between"
+          alignItems={{ sm: 'center' }}
+          sx={{ pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}
+        >
+          <Typography variant="caption" color="text.secondary">El backend también valida permiso vigente, veda activa y talla mínima.</Typography>
+          <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+            <Button variant="text" onClick={() => navigate('/app/trips')}>Cancelar</Button>
+            <Button variant="contained" onClick={saveTrip} disabled={disabled}>
+              {saving ? 'Guardando...' : 'Guardar faena'}
+            </Button>
+          </Stack>
         </Stack>
-        </>}
-        <Typography variant="subtitle2">Ubicación GPS de desembarco</Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
-          <TextField label="Latitud" type="number" value={landingLatitude} onChange={(event) => setLandingLatitude(event.target.value)} />
-          <TextField label="Longitud" type="number" value={landingLongitude} onChange={(event) => setLandingLongitude(event.target.value)} />
-          <IconButton onClick={useMyLocation} disabled={locating} aria-label="Usar mi ubicación" color="primary">
-            {locating ? <CircularProgress size={20} /> : <MyLocationIcon />}
-          </IconButton>
-        </Stack>
-        <Stack direction="row" spacing={2}>
-          <Button variant="outlined" onClick={() => navigate('/app/trips')}>Atrás</Button>
-          <Button variant="contained" onClick={saveTrip} disabled={disabled}>
-            {saving ? 'Guardando...' : 'Guardar faena'}
-          </Button>
-        </Stack>
-        <Typography variant="caption" color="text.secondary">El backend también valida permiso vigente, veda activa y talla mínima.</Typography>
       </Stack>
     </PageContainer>
   );

@@ -45,7 +45,7 @@ export function NotificationsPage() {
               key={item.id}
               divider={index < notifications.length - 1}
               alignItems="flex-start"
-              sx={item.severity === 'CRITICAL' ? { borderLeft: '4px solid', borderColor: 'error.main' } : undefined}
+              sx={item.severity === 'CRITICAL' ? { bgcolor: 'rgba(179,38,30,.06)', borderRadius: 2 } : undefined}
             >
               <ListItemAvatar>
                 <Avatar sx={{ bgcolor: COLOR_BY_TYPE[item.type] ?? COLOR_BY_TYPE.INFO }}>
