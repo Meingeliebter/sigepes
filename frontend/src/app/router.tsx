@@ -19,6 +19,7 @@ import { UsersPage } from '../modules/users/pages/UsersPage';
 import { AuditPage } from '../modules/audit/pages/AuditPage';
 import { VesselAuditPage } from '../modules/inspections/pages/VesselAuditPage';
 import { PermitVerificationPage } from '../modules/permits/pages/PermitVerificationPage';
+import { QuotasPage } from '../modules/quotas/pages/QuotasPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
           { path: 'trips/new', element: <NewTripPage /> },
           { path: 'species', element: <SpeciesPage /> },
           { path: 'closures', element: <ClosuresPage /> },
+          { path: 'quotas', element: <QuotasPage /> },
           { path: 'permits', element: <PermitsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'access-denied', element: <AccessDeniedPage /> },

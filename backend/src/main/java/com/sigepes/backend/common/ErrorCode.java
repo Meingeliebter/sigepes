@@ -63,6 +63,11 @@ public enum ErrorCode {
     NULL_DECLARATION_WITH_CATCHES(HttpStatus.UNPROCESSABLE_ENTITY,
             "No puedes declarar captura nula en una faena que ya tiene capturas registradas."),
 
+    // --- Cuotas (RF-07) -----------------------------------------------
+    QUOTA_NOT_FOUND(HttpStatus.NOT_FOUND, "La cuota no existe."),
+    QUOTA_EXHAUSTED(HttpStatus.UNPROCESSABLE_ENTITY, "La captura excede la cuota disponible."),
+    INVALID_QUOTA_PERIOD(HttpStatus.BAD_REQUEST, "El periodo de la cuota no es válido."),
+
     // --- Genéricos ----------------------------------------------------
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Hay errores de validación en la solicitud."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "La operación no está permitida sobre este recurso."),
