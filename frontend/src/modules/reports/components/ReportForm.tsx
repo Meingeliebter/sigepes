@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { GeoMap } from '../../../shared/components/GeoMap';
 import { domainService, type ReportInput, type ReportReceipt, type ReportType } from '../../../shared/api/domain.service';
 import { toAppError } from '../../../shared/errors/AppError';
+import { useInteractiveMap } from '../../../shared/hooks/useInteractiveMap';
 import { ACCEPTED_PHOTO_TYPES, MAX_PHOTO_BYTES, stripImage } from '../../../shared/media/stripImage';
 import { enqueueReport, saveReceipt } from '../../../shared/storage/reportOutbox';
 import { getCachedZones } from '../../../shared/storage/zoneOfflineStore';
@@ -67,6 +68,7 @@ export function ReportForm({ signedIn }: ReportFormProps) {
   const canSubmit = form.description.trim().length >= 10 && (hasPoint || hasPlace) && !latInvalid && !lonInvalid && !halfPoint && !submitting;
 
   const zones = useMemo(() => getCachedZones() ?? [], []);
+  const interactiveMap = useInteractiveMap();
   const effectiveAnonymous = !signedIn || anonymous;
 
   const addPhotos = (files: FileList | null) => {
@@ -230,6 +232,11 @@ export function ReportForm({ signedIn }: ReportFormProps) {
 
       <Box>
         <Typography variant="subtitle2" sx={{ mb: 1 }}>¿Dónde ocurrió?</Typography>
+        {interactiveMap && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -0.5, mb: 1.5 }}>
+            Marca el punto en el mapa, usa tu GPS o escribe las coordenadas.
+          </Typography>
+        )}
         <Grid container spacing={2} alignItems="flex-start">
           <Grid size={{ xs: 6, sm: 4 }}>
             <TextField
@@ -258,13 +265,14 @@ export function ReportForm({ signedIn }: ReportFormProps) {
           helperText="Opcional si diste coordenadas. Ej.: muelle de Bahía Solano, frente a Punta Huina."
           slotProps={{ htmlInput: { maxLength: 200 } }}
         />
-        {hasPoint && (
+        {(hasPoint || interactiveMap) && (
           <Box sx={{ mt: 2 }}>
             <GeoMap
               title="Ubicación de la denuncia"
               zones={zones}
-              track={[{ id: 'report', latitude: latitude!, longitude: longitude! }]}
-              height={240}
+              track={hasPoint ? [{ id: 'report', latitude: latitude!, longitude: longitude! }] : []}
+              height={interactiveMap ? 320 : 240}
+              onPick={(lat, lon) => setForm((current) => ({ ...current, latitude: String(lat), longitude: String(lon) }))}
             />
           </Box>
         )}
