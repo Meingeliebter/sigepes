@@ -1,6 +1,7 @@
 import BlockIcon from '@mui/icons-material/Block';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DonutLargeIcon from '@mui/icons-material/DonutLarge';
+import WrongLocationIcon from '@mui/icons-material/WrongLocation';
 import DirectionsBoatIcon from '@mui/icons-material/DirectionsBoat';
 import GavelIcon from '@mui/icons-material/Gavel';
 import HistoryIcon from '@mui/icons-material/History';
@@ -52,6 +53,7 @@ const ICONS: Record<string, ReactNode> = {
   history: <HistoryIcon />,
   qrcode: <QrCode2Icon />,
   quota: <DonutLargeIcon />,
+  zone: <WrongLocationIcon />,
 };
 
 function initials(name?: string) {

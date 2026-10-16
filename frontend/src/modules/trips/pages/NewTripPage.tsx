@@ -1,3 +1,4 @@
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { PageContainer } from '@/shared/components/PageContainer';
@@ -12,6 +13,8 @@ import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import { useAuthStore } from '../../auth/store/authStore';
 import { savePendingTrip } from '@/shared/storage/tripOfflineStore';
 import { findApplicableQuota } from '@/shared/storage/quotaOfflineStore';
+import { useTripTracker } from '@/shared/hooks/useTripTracker';
+import { ZONE_TYPE_LABEL } from '@/shared/geo/geo';
 
 /** Bloque del formulario con su título; agrupa los campos como los apartados de la bitácora en papel. */
 function FormSection({ title, children }: { title: string; children: ReactNode }) {
@@ -34,6 +37,9 @@ export function NewTripPage() {
   const closuresQuery = useQuery({ queryKey: ['closures', 'active'], queryFn: domainService.activeClosures });
   // AC-07.6: la lista de cuotas se cachea en el dispositivo; sin señal se valida con el último saldo.
   const quotasQuery = useQuery({ queryKey: ['quotas'], queryFn: domainService.quotas });
+  // AC-04.1 / AC-04.6: zonas cacheadas y seguimiento GPS mientras la faena está abierta.
+  const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: domainService.zones });
+  const tracker = useTripTracker(zonesQuery.data, true);
   const [vesselId, setVesselId] = useState('');
   const [originPort, setOriginPort] = useState('');
   const [zone, setZone] = useState('Pacífico Norte');
@@ -99,12 +105,17 @@ export function NewTripPage() {
       !vesselId ||
       !originPort ||
       !hasLandingLocation ||
-      (!nullDeclaration && (!speciesId || !quantity || !weightKg || !averageSizeCm || blockedByClosure || blockedBySize))
+      (!nullDeclaration && (!speciesId || !quantity || !weightKg || !averageSizeCm || blockedByClosure || blockedBySize || blockedByQuota))
     ) {
       return;
     }
 
     setSaving(true);
+    // AC-04.1: además del muestreo periódico, se registra la posición en el momento de la captura.
+    const atCatch = await tracker.capture();
+    const positions = atCatch && !tracker.positions.some((item) => item.id === atCatch.id)
+      ? [...tracker.positions, atCatch]
+      : tracker.positions;
     try {
       const trip = await domainService.startTrip({
         vesselId,
@@ -112,6 +123,9 @@ export function NewTripPage() {
         originPort,
         date: new Date().toISOString().slice(0, 10),
       });
+      if (positions.length > 0) {
+        await domainService.postPositions(trip.id, positions);
+      }
       if (!nullDeclaration) {
         await domainService.addCapture(trip.id, {
           speciesId,
@@ -159,6 +173,7 @@ export function NewTripPage() {
         landingLatitude: Number(landingLatitude),
         landingLongitude: Number(landingLongitude),
         ownerId: user?.id ?? '',
+        positions,
       });
       setInfo('Sin conexión: la faena quedó guardada en este dispositivo.');
       void navigate('/app/trips');
@@ -180,6 +195,25 @@ export function NewTripPage() {
         {!online && <Alert severity="info">Modo offline activo. La sincronización se habilitará al recuperar conexión.</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
         {info && <Alert severity="warning">{info}</Alert>}
+        {tracker.currentZone && (
+          <Alert severity="error" variant="filled" icon={<ReportProblemIcon fontSize="large" />} role="alert">
+            <AlertTitle sx={{ fontWeight: 700 }}>Estás dentro de una zona restringida</AlertTitle>
+            <Typography variant="body2">
+              <strong>{tracker.currentZone.name}</strong> · {ZONE_TYPE_LABEL[tracker.currentZone.zoneType]} (
+              {tracker.currentZone.resolutionNumber}). La extracción aquí no está autorizada: el ingreso queda
+              registrado para la autoridad.
+            </Typography>
+          </Alert>
+        )}
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ color: 'text.secondary' }}>
+          <GpsFixedIcon fontSize="small" color={tracker.status === 'tracking' ? 'secondary' : 'disabled'} />
+          <Typography variant="body2">
+            {tracker.status === 'tracking' && `Seguimiento GPS activo · ${tracker.positions.length} posición(es) registradas`}
+            {tracker.status === 'idle' && 'Activando el seguimiento GPS…'}
+            {tracker.status === 'denied' && 'Sin permiso de ubicación: la faena se registra sin recorrido. Actívalo para recibir alertas de zonas restringidas.'}
+            {tracker.status === 'unavailable' && 'Ubicación no disponible en este momento; se reintentará en 5 minutos.'}
+          </Typography>
+        </Stack>
         {vesselsQuery.isLoading && <CircularProgress size={24} />}
         {!vesselsQuery.isLoading && (vesselsQuery.data?.length ?? 0) === 0 && (
           <Alert severity="warning">Necesitas registrar una embarcación antes de abrir una faena.</Alert>

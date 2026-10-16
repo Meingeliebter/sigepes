@@ -19,6 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Especies', path: '/app/species', icon: 'fish', roles: ALL, group: 'Recursos y control' },
   { label: 'Vedas', path: '/app/closures', icon: 'block', roles: ALL, group: 'Recursos y control' },
   { label: 'Cuotas', path: '/app/quotas', icon: 'quota', roles: ALL, group: 'Recursos y control' },
+  { label: 'Zonas restringidas', path: '/app/zones', icon: 'zone', roles: ALL, group: 'Recursos y control' },
   { label: 'Notificaciones', path: '/app/notifications', icon: 'bell', roles: ALL, group: 'Recursos y control' },
   { label: 'Usuarios', path: '/app/users', icon: 'people', roles: ['ADMIN'], group: 'Administración' },
   { label: 'Auditoría', path: '/app/audit', icon: 'history', roles: ['INSPECTOR', 'ADMIN'], group: 'Administración' },

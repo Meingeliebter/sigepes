@@ -24,6 +24,10 @@ import com.sigepes.backend.gears.GearStatus;
 import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitRepository;
 import com.sigepes.backend.permits.PermitStatus;
+import com.sigepes.backend.geo.Polygon;
+import com.sigepes.backend.geo.RestrictedZoneEntity;
+import com.sigepes.backend.geo.RestrictedZoneRepository;
+import com.sigepes.backend.geo.ZoneType;
 import com.sigepes.backend.quotas.QuotaEntity;
 import com.sigepes.backend.quotas.QuotaRepository;
 import com.sigepes.backend.species.MeasurementMethod;
@@ -63,12 +67,14 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final ClosureRepository closureRepository;
     private final PermitRepository permitRepository;
     private final QuotaRepository quotaRepository;
+    private final RestrictedZoneRepository zoneRepository;
 
     public DemoDataSeeder(
             @org.springframework.beans.factory.annotation.Value("${sigepes.seed.enabled:true}") boolean enabled,
             UserRepository userRepository, UserService userService, FishingGearRepository gearRepository,
             VesselRepository vesselRepository, SpeciesRepository speciesRepository,
-            ClosureRepository closureRepository, PermitRepository permitRepository, QuotaRepository quotaRepository) {
+            ClosureRepository closureRepository, PermitRepository permitRepository, QuotaRepository quotaRepository,
+            RestrictedZoneRepository zoneRepository) {
         this.enabled = enabled;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -78,6 +84,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.closureRepository = closureRepository;
         this.permitRepository = permitRepository;
         this.quotaRepository = quotaRepository;
+        this.zoneRepository = zoneRepository;
     }
 
     @Override
@@ -152,6 +159,16 @@ public class DemoDataSeeder implements ApplicationRunner {
                 new BigDecimal("800.00"), new BigDecimal("150.00"),
                 vesselRepository.findById(prefixedId("emb", "DIMAR-CO-20044")).orElse(null), "AUNAP-0612-2025");
 
+        // --- Zonas restringidas (RF-04): delimitaciones aproximadas, solo para demostración
+        zone("DEMO Veda camarón · Pacífico Norte", ZoneType.CLOSURE_ZONE, List.of(
+                new double[] { 6.05, -77.62 }, new double[] { 6.45, -77.62 }, new double[] { 6.45, -77.44 },
+                new double[] { 6.05, -77.44 }), "AUNAP-0456-2025",
+                "Franja costera frente a Bahía Solano cubierta por la veda del camarón blanco (delimitación de demostración).");
+        zone("DEMO Área Marina Protegida · Ensenada de Utría", ZoneType.MPA, List.of(
+                new double[] { 5.93, -77.40 }, new double[] { 6.08, -77.40 }, new double[] { 6.08, -77.29 },
+                new double[] { 5.98, -77.27 }, new double[] { 5.93, -77.30 }), "MADS-PNN-UTRIA-DEMO",
+                "Polígono aproximado de un área protegida para pruebas; no corresponde a la cartografía oficial.");
+
         // --- Permisos: vigente, vencido y pendiente ----------------------
         permit("PES-0231", "Pesca artesanal", fisher, today.minusMonths(6), today.plusMonths(6),
                 PermitStatus.APPROVED, null);
@@ -164,6 +181,14 @@ public class DemoDataSeeder implements ApplicationRunner {
                 PermitStatus.SUSPENDED, "Incumplimiento reiterado del reporte de desembarco.");
 
         log.info("Datos DEMO cargados. Usuarios de prueba con contraseña «{}».", DEMO_PASSWORD);
+    }
+
+    private void zone(String name, ZoneType type, List<double[]> vertices, String resolution, String description) {
+        RestrictedZoneEntity zone = new RestrictedZoneEntity(prefixedId("zon", name), name, type,
+                Polygon.validated(vertices), resolution);
+        zone.setDescription(description);
+        zone.setDemo(true);
+        zoneRepository.save(zone);
     }
 
     private void quota(SpeciesEntity species, String zone, LocalDate from, LocalDate to, BigDecimal totalKg,
