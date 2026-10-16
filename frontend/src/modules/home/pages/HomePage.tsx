@@ -8,7 +8,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import GavelIcon from '@mui/icons-material/Gavel';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MenuIcon from '@mui/icons-material/Menu';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import PhishingIcon from '@mui/icons-material/Phishing';
 import PhoneIcon from '@mui/icons-material/Phone';
 import PublicIcon from '@mui/icons-material/Public';
@@ -43,7 +43,7 @@ const QUICK_ACCESS = [
   { label: 'Permisos de pesca', description: 'Solicita y consulta tu licencia', icon: <GavelIcon />, to: '/app/permits' },
   { label: 'Catálogo de especies', description: 'Tallas mínimas legales', icon: <PhishingIcon />, to: '/app/species' },
   { label: 'Vedas vigentes', description: 'Zonas y periodos restringidos', icon: <BlockIcon />, to: '/app/closures' },
-  { label: 'Notificaciones', description: 'Alertas regulatorias y de faenas', icon: <NotificationsIcon />, to: '/app/notifications' },
+  { label: 'Denunciar pesca ilegal', description: 'Anónimo y sin cuenta', icon: <CampaignOutlinedIcon />, to: '/denunciar' },
 ];
 
 const SCOPE_BADGES = [

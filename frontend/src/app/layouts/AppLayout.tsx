@@ -1,4 +1,6 @@
 import BlockIcon from '@mui/icons-material/Block';
+import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
+import MarkEmailUnreadOutlinedIcon from '@mui/icons-material/MarkEmailUnreadOutlined';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DonutLargeIcon from '@mui/icons-material/DonutLarge';
 import WrongLocationIcon from '@mui/icons-material/WrongLocation';
@@ -35,6 +37,7 @@ import { useOnlineStatus } from '../../shared/hooks/useOnlineStatus';
 import { NAV_GROUPS, NAV_ITEMS, matchNavItem } from '../../shared/permissions/navigation';
 import { pendingTripCount } from '../../shared/storage/tripOfflineStore';
 import { syncPendingTrips } from '../../shared/sync/tripSync';
+import { flushReportOutbox } from '../../shared/sync/reportSync';
 import { glass } from '../../shared/theme/theme';
 
 const WIDTH = 264;
@@ -54,6 +57,8 @@ const ICONS: Record<string, ReactNode> = {
   qrcode: <QrCode2Icon />,
   quota: <DonutLargeIcon />,
   zone: <WrongLocationIcon />,
+  report: <CampaignOutlinedIcon />,
+  inbox: <MarkEmailUnreadOutlinedIcon />,
 };
 
 function initials(name?: string) {
@@ -91,6 +96,8 @@ export function AppLayout() {
     if (!wasOnline.current && online && pendingTripCount() > 0) {
       void syncPendingTrips(queryClient).then(() => setPending(pendingTripCount()));
     }
+    // AC-10.6: igual con las denuncias redactadas sin señal.
+    if (online) void flushReportOutbox();
     wasOnline.current = online;
   }, [online, queryClient]);
 

@@ -41,6 +41,7 @@ public class AuditService {
     public static final String MODULE_TRIPS = "faenas";
     public static final String MODULE_QUOTAS = "cuotas";
     public static final String MODULE_GEO = "geolocalizacion";
+    public static final String MODULE_REPORTS = "denuncias";
 
     private static final int MAX_DETAIL = 600;
     private static final int MAX_STATE = 2000;
@@ -85,6 +86,23 @@ public class AuditService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void recordAs(String actorId, String actorLabel, AuditActionType actionType, String action,
             String module, String entity, String entityId, String detail, String beforeState, String afterState) {
+        save(actorId, actorLabel, actionType, action, module, entity, entityId, detail, beforeState, afterState,
+                clientIp());
+    }
+
+    /**
+     * AC-10.5 / RN-20: registra un evento sin ningún dato que identifique a quien lo originó: ni
+     * usuario, aunque haya sesión iniciada, ni IP. Solo para acciones que la ley protege como
+     * anónimas, como la denuncia de pesca ilegal.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void recordAnonymous(AuditActionType actionType, String action, String module, String entity,
+            String entityId, String detail) {
+        save(null, "anónimo", actionType, action, module, entity, entityId, detail, null, null, null);
+    }
+
+    private void save(String actorId, String actorLabel, AuditActionType actionType, String action, String module,
+            String entity, String entityId, String detail, String beforeState, String afterState, String ip) {
         AuditLogEntity entry = new AuditLogEntity(
                 Ids.generate("aud"),
                 Instant.now(),
@@ -96,7 +114,7 @@ public class AuditService {
                 entity,
                 entityId,
                 truncate(detail, MAX_DETAIL),
-                clientIp(),
+                ip,
                 truncate(beforeState, MAX_STATE),
                 truncate(afterState, MAX_STATE));
         repository.save(entry);

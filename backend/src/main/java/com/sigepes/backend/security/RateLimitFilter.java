@@ -19,9 +19,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Limitación de intentos en los endpoints sensibles de autenticación.
+ * Limitación de intentos en los endpoints sensibles: autenticación y los dos endpoints públicos de
+ * denuncias (radicar, contra el spam; consultar por código, contra la adivinación de códigos).
  *
- * <p>Ventana fija de un minuto por IP, en memoria. Suficiente para el MVP y sin dependencias
+ * <p>Ventana fija de un minuto por IP, en memoria. La IP solo vive en este mapa durante la ventana:
+ * nunca se escribe en la base de datos ni en la auditoría, lo que preserva el anonimato de las
+ * denuncias (AC-10.5). Suficiente para el MVP y sin dependencias
  * adicionales; en un despliegue con varias instancias habría que moverlo a un almacén compartido.
  */
 @Component
@@ -29,32 +32,51 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String LOGIN_PATH = "/api/v1/auth/login";
     private static final String REGISTER_PATH = "/api/v1/auth/register";
+    private static final String REPORTS_PATH = "/api/v1/denuncias";
+    private static final String TRACKING_PREFIX = "/api/v1/denuncias/seguimiento/";
 
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
     private final int maxAttemptsPerMinute;
+    private final int maxPublicRequestsPerMinute;
 
-    public RateLimitFilter(@Value("${sigepes.security.login-attempts-per-minute:10}") int maxAttemptsPerMinute) {
+    public RateLimitFilter(@Value("${sigepes.security.login-attempts-per-minute:10}") int maxAttemptsPerMinute,
+            @Value("${sigepes.security.public-requests-per-minute:20}") int maxPublicRequestsPerMinute) {
         this.maxAttemptsPerMinute = maxAttemptsPerMinute;
+        this.maxPublicRequestsPerMinute = maxPublicRequestsPerMinute;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        return bucket(request) == null;
+    }
+
+    /** Nombre del contador al que pertenece la petición, o null si no se limita. */
+    private static String bucket(HttpServletRequest request) {
         String path = request.getRequestURI();
-        boolean sensitive = LOGIN_PATH.equals(path) || REGISTER_PATH.equals(path);
-        return !sensitive || !"POST".equalsIgnoreCase(request.getMethod());
+        String method = request.getMethod();
+        if ("POST".equalsIgnoreCase(method)
+                && (LOGIN_PATH.equals(path) || REGISTER_PATH.equals(path) || REPORTS_PATH.equals(path))) {
+            return path;
+        }
+        if ("GET".equalsIgnoreCase(method) && path.startsWith(TRACKING_PREFIX)) {
+            return TRACKING_PREFIX;
+        }
+        return null;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String key = request.getRequestURI() + "|" + request.getRemoteAddr();
+        String bucket = bucket(request);
+        int limit = bucket.startsWith(REPORTS_PATH) ? maxPublicRequestsPerMinute : maxAttemptsPerMinute;
+        String key = bucket + "|" + request.getRemoteAddr();
         long minute = Instant.now().getEpochSecond() / 60;
         Window window = windows.compute(key,
                 (ignored, current) -> current == null || current.minute != minute
                         ? new Window(minute)
                         : current);
 
-        if (window.counter.incrementAndGet() > maxAttemptsPerMinute) {
+        if (window.counter.incrementAndGet() > limit) {
             reject(response, request.getRequestURI());
             return;
         }
