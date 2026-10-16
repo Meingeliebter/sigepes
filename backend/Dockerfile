@@ -16,7 +16,12 @@ WORKDIR /app
 # No se ejecuta como root.
 RUN addgroup -S sigepes && adduser -S sigepes -G sigepes
 COPY --from=build /build/target/backend-*.jar app.jar
+# AC-15.6: punto de montaje del disco persistente para los archivos subidos.
+RUN mkdir -p /var/data/uploads && chown -R sigepes:sigepes /var/data
 USER sigepes
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# AC-21.3: el orquestador reinicia el contenedor cuando el health check falla.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3     CMD wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '"UP"' || exit 1
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

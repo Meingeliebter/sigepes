@@ -12,3 +12,6 @@
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Secretos del stack docker compose (ver .env.example)
+.env

@@ -1,0 +1,43 @@
+# HU-21 · AC-21.2 / AC-21.6 — Despliegue continuo.
+# Solo corre cuando CI terminó en verde sobre main. Dispara los "deploy hooks" de la plataforma
+# (Render para la API; Vercel/Netlify despliegan el frontend desde su propia integración con Git).
+# Los hooks son secretos del repositorio: nunca se escriben en el código (AC-21.4).
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Desplegar API
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL no está configurado; se omite el despliegue de la API."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK"
+      - name: Esperar health check
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::warning::La variable API_URL no está configurada; no se verifica el health check."
+            exit 0
+          fi
+          for i in $(seq 1 30); do
+            if curl -fsS "$API_URL/actuator/health" | grep -q '"UP"'; then
+              echo "API saludable"; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::La API no respondió UP en 5 minutos; revisa el despliegue o haz rollback."
+          exit 1

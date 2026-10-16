@@ -38,6 +38,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- HU-21 · AC-21.3: /actuator/health para el health check de la plataforma de despliegue. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<!-- En Spring Boot 4 la autoconfiguración de Flyway vive en su propio módulo. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
