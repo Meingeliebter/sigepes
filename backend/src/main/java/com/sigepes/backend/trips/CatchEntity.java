@@ -40,6 +40,10 @@ public class CatchEntity {
     @Column(name = "average_size_cm", precision = 6, scale = 2, nullable = false)
     private BigDecimal averageSizeCm;
 
+    /** AC-06.4: talla mínima vigente al momento de la captura, para no alterar el historial. */
+    @Column(name = "min_size_cm_at_capture", precision = 6, scale = 2, nullable = false)
+    private BigDecimal minSizeCmAtCapture;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -47,12 +51,13 @@ public class CatchEntity {
     }
 
     public CatchEntity(String id, SpeciesEntity species, Integer quantity, BigDecimal weightKg,
-            BigDecimal averageSizeCm) {
+            BigDecimal averageSizeCm, BigDecimal minSizeCmAtCapture) {
         this.id = id;
         this.species = species;
         this.quantity = quantity;
         this.weightKg = weightKg;
         this.averageSizeCm = averageSizeCm;
+        this.minSizeCmAtCapture = minSizeCmAtCapture;
     }
 
     @PrePersist
@@ -86,6 +91,10 @@ public class CatchEntity {
 
     public BigDecimal getAverageSizeCm() {
         return averageSizeCm;
+    }
+
+    public BigDecimal getMinSizeCmAtCapture() {
+        return minSizeCmAtCapture;
     }
 
     public Instant getCreatedAt() {

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sigepes.backend.species.SpeciesDtos.CreateSpeciesRequest;
 import com.sigepes.backend.species.SpeciesDtos.SpeciesResponse;
+import com.sigepes.backend.species.SpeciesDtos.SpeciesVersionResponse;
 import com.sigepes.backend.species.SpeciesDtos.UpdateSpeciesRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,5 +60,12 @@ public class SpeciesController {
     public SpeciesResponse update(@PathVariable String id, @Valid @RequestBody UpdateSpeciesRequest request) {
         speciesService.update(id, request);
         return speciesService.detail(id);
+    }
+
+    @GetMapping("/{id}/versiones")
+    @PreAuthorize("hasAnyRole('ADMIN','ANALYST','INSPECTOR')")
+    @Operation(summary = "Historial de versiones de una especie (AC-06.4)")
+    public List<SpeciesVersionResponse> versions(@PathVariable String id) {
+        return speciesService.versions(id);
     }
 }

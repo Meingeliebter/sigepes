@@ -1,5 +1,6 @@
 import { httpClient } from './httpClient';
 import type { Role } from '../../modules/auth/types/auth.types';
+import { cacheSpecies, getCachedSpecies } from '../storage/speciesOfflineStore';
 
 export interface Vessel {
   id: string;
@@ -30,8 +31,25 @@ export interface Species {
   commonName: string;
   scientificName: string;
   minSizeCm: number;
+  measurementMethod: string;
+  region: string;
+  imageUrl: string;
   status: string;
   underClosure?: boolean;
+}
+
+/** AC-06.4: una fila del historial de versiones de una especie. */
+export interface SpeciesVersion {
+  version: number;
+  commonName: string;
+  scientificName: string;
+  minSizeCm: number;
+  measurementMethod: string;
+  region: string;
+  imageUrl: string;
+  status: string;
+  changedByLabel: string;
+  changedAt: string;
 }
 
 export interface Closure {
@@ -209,8 +227,46 @@ export const domainService = {
   },
 
   // --- Especies y vedas (RF-06 / RF-05) -------------------------------
+  /** AC-06.3: cachea el catálogo en cada fetch exitoso y cae a la copia local sin conexión. */
   async species(): Promise<Species[]> {
-    return (await httpClient.get<Species[]>('/especies')).data;
+    try {
+      const data = (await httpClient.get<Species[]>('/especies')).data;
+      cacheSpecies(data);
+      return data;
+    } catch (error) {
+      const cached = getCachedSpecies();
+      if (cached) return cached;
+      throw error;
+    }
+  },
+  async createSpecies(payload: {
+    commonName: string;
+    scientificName: string;
+    minSizeCm: number;
+    measurementMethod: string;
+    region: string;
+    imageUrl: string;
+    status?: string;
+  }): Promise<Species> {
+    return (await httpClient.post<Species>('/especies', payload)).data;
+  },
+  async updateSpecies(
+    id: string,
+    payload: Partial<{
+      commonName: string;
+      scientificName: string;
+      minSizeCm: number;
+      measurementMethod: string;
+      region: string;
+      imageUrl: string;
+      status: string;
+    }>,
+  ): Promise<Species> {
+    return (await httpClient.patch<Species>(`/especies/${id}`, payload)).data;
+  },
+  /** AC-06.4: historial de versiones de una especie. */
+  async speciesVersions(id: string): Promise<SpeciesVersion[]> {
+    return (await httpClient.get<SpeciesVersion[]>(`/especies/${id}/versiones`)).data;
   },
   async closures(): Promise<Closure[]> {
     return (await httpClient.get<Closure[]>('/vedas')).data;

@@ -23,12 +23,13 @@ public final class TripDtos {
             String species,
             Integer quantity,
             BigDecimal weightKg,
-            BigDecimal averageSizeCm) {
+            BigDecimal averageSizeCm,
+            BigDecimal minSizeCmAtCapture) {
 
         public static CatchResponse from(CatchEntity entity) {
             return new CatchResponse(entity.getId(), entity.getSpecies().getId(),
                     entity.getSpecies().getCommonName(), entity.getQuantity(), entity.getWeightKg(),
-                    entity.getAverageSizeCm());
+                    entity.getAverageSizeCm(), entity.getMinSizeCmAtCapture());
         }
     }
 

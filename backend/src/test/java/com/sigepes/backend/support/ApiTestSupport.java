@@ -22,7 +22,9 @@ import com.sigepes.backend.gears.GearStatus;
 import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitRepository;
 import com.sigepes.backend.permits.PermitStatus;
+import com.sigepes.backend.species.MeasurementMethod;
 import com.sigepes.backend.species.SpeciesEntity;
+import com.sigepes.backend.species.SpeciesRegion;
 import com.sigepes.backend.species.SpeciesRepository;
 import com.sigepes.backend.species.SpeciesStatus;
 import com.sigepes.backend.users.Role;
@@ -94,7 +96,8 @@ public abstract class ApiTestSupport {
 
     protected SpeciesEntity givenSpecies(String commonName, BigDecimal minSizeCm) {
         return speciesRepository.save(new SpeciesEntity(Ids.generate("esp"), commonName,
-                "Scientificus " + commonName.toLowerCase(), minSizeCm, SpeciesStatus.ACTIVE));
+                "Scientificus " + commonName.toLowerCase(), minSizeCm, SpeciesStatus.ACTIVE,
+                MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.AMBAS, "https://placehold.co/400x300?text=Especie"));
     }
 
     protected PermitEntity givenPermit(UserEntity owner, String number, PermitStatus status, LocalDate issued,

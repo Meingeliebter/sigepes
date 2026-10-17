@@ -31,6 +31,20 @@ public class SpeciesEntity {
     @Column(name = "min_size_cm", precision = 6, scale = 2, nullable = false)
     private BigDecimal minSizeCm;
 
+    /** AC-06.2: método con el que se mide la talla (longitud total vs. a la horquilla). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "measurement_method", length = 20, nullable = false)
+    private MeasurementMethod measurementMethod;
+
+    /** AC-06.5: región donde la especie está presente, para filtrar el catálogo. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "region", length = 20, nullable = false)
+    private SpeciesRegion region;
+
+    /** AC-06.2: imagen de referencia para identificar la especie en campo. */
+    @Column(name = "image_url", length = 500, nullable = false)
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     private SpeciesStatus status = SpeciesStatus.ACTIVE;
@@ -48,12 +62,15 @@ public class SpeciesEntity {
     }
 
     public SpeciesEntity(String id, String commonName, String scientificName, BigDecimal minSizeCm,
-            SpeciesStatus status) {
+            SpeciesStatus status, MeasurementMethod measurementMethod, SpeciesRegion region, String imageUrl) {
         this.id = id;
         this.commonName = commonName;
         this.scientificName = scientificName;
         this.minSizeCm = minSizeCm;
         this.status = status;
+        this.measurementMethod = measurementMethod;
+        this.region = region;
+        this.imageUrl = imageUrl;
     }
 
     @PrePersist
@@ -94,6 +111,30 @@ public class SpeciesEntity {
 
     public void setMinSizeCm(BigDecimal minSizeCm) {
         this.minSizeCm = minSizeCm;
+    }
+
+    public MeasurementMethod getMeasurementMethod() {
+        return measurementMethod;
+    }
+
+    public void setMeasurementMethod(MeasurementMethod measurementMethod) {
+        this.measurementMethod = measurementMethod;
+    }
+
+    public SpeciesRegion getRegion() {
+        return region;
+    }
+
+    public void setRegion(SpeciesRegion region) {
+        this.region = region;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public SpeciesStatus getStatus() {

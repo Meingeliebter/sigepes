@@ -23,6 +23,8 @@ import com.sigepes.backend.gears.GearStatus;
 import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitRepository;
 import com.sigepes.backend.permits.PermitStatus;
+import com.sigepes.backend.species.MeasurementMethod;
+import com.sigepes.backend.species.SpeciesRegion;
 import com.sigepes.backend.species.SpeciesEntity;
 import com.sigepes.backend.species.SpeciesRepository;
 import com.sigepes.backend.species.SpeciesStatus;
@@ -168,7 +170,8 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private SpeciesEntity species(String commonName, String scientificName, BigDecimal minSizeCm) {
         SpeciesEntity species = new SpeciesEntity(prefixedId("esp", commonName), commonName, scientificName,
-                minSizeCm, SpeciesStatus.ACTIVE);
+                minSizeCm, SpeciesStatus.ACTIVE, MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.AMBAS,
+                "https://placehold.co/400x300?text=" + commonName.replace(" ", "+"));
         species.setDemo(true);
         return speciesRepository.save(species);
     }
