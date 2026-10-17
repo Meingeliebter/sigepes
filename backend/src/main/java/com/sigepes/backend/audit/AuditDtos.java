@@ -3,10 +3,12 @@ package com.sigepes.backend.audit;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
+import com.sigepes.backend.common.AppClock;
+
 public final class AuditDtos {
 
     private static final DateTimeFormatter DISPLAY = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    private static final ZoneId ZONE = ZoneId.systemDefault();
+    private static final ZoneId ZONE = AppClock.ZONE;
 
     private AuditDtos() {
     }
