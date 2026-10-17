@@ -40,7 +40,11 @@ public class CatchEntity {
     @Column(name = "average_size_cm", precision = 6, scale = 2, nullable = false)
     private BigDecimal averageSizeCm;
 
-    /** AC-06.4: talla mínima vigente al momento de la captura, para no alterar el historial. */
+    /**
+     * AC-06.4: talla mínima legal vigente en el momento de la captura. Se copia aquí para que una
+     * edición posterior al catálogo de especies nunca altere el registro histórico de una faena ya
+     * cerrada.
+     */
     @Column(name = "min_size_cm_at_capture", precision = 6, scale = 2, nullable = false)
     private BigDecimal minSizeCmAtCapture;
 

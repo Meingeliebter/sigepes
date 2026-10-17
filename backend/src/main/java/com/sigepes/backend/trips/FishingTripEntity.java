@@ -1,5 +1,6 @@
 package com.sigepes.backend.trips;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -55,6 +56,10 @@ public class FishingTripEntity {
     @Column(name = "zone", length = 120, nullable = false)
     private String zone;
 
+    /** AC-03.2: puerto de origen de la faena. */
+    @Column(name = "origin_port", length = 120, nullable = false)
+    private String originPort;
+
     @Column(name = "trip_date", nullable = false)
     private LocalDate tripDate;
 
@@ -63,6 +68,13 @@ public class FishingTripEntity {
 
     @Column(name = "arrival_time")
     private LocalTime arrivalTime;
+
+    /** AC-03.2: ubicación GPS de desembarco, capturada al cerrar la faena. */
+    @Column(name = "landing_latitude", precision = 9, scale = 6)
+    private BigDecimal landingLatitude;
+
+    @Column(name = "landing_longitude", precision = 9, scale = 6)
+    private BigDecimal landingLongitude;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
@@ -159,6 +171,14 @@ public class FishingTripEntity {
         this.zone = zone;
     }
 
+    public String getOriginPort() {
+        return originPort;
+    }
+
+    public void setOriginPort(String originPort) {
+        this.originPort = originPort;
+    }
+
     public LocalDate getTripDate() {
         return tripDate;
     }
@@ -181,6 +201,22 @@ public class FishingTripEntity {
 
     public void setArrivalTime(LocalTime arrivalTime) {
         this.arrivalTime = arrivalTime;
+    }
+
+    public BigDecimal getLandingLatitude() {
+        return landingLatitude;
+    }
+
+    public void setLandingLatitude(BigDecimal landingLatitude) {
+        this.landingLatitude = landingLatitude;
+    }
+
+    public BigDecimal getLandingLongitude() {
+        return landingLongitude;
+    }
+
+    public void setLandingLongitude(BigDecimal landingLongitude) {
+        this.landingLongitude = landingLongitude;
     }
 
     public TripStatus getStatus() {

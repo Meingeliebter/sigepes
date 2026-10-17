@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import com.sigepes.backend.closures.ClosureType;
 import com.sigepes.backend.gears.FishingGearEntity;
 import com.sigepes.backend.permits.PermitStatus;
 import com.sigepes.backend.species.SpeciesEntity;
@@ -113,7 +114,8 @@ class TripRulesTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/faenas").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"vesselId":"%s","zone":"%s"}""".formatted(broken.getId(), ZONE)))
+                        {"vesselId":"%s","zone":"%s","originPort":"Bahía Solano"}"""
+                        .formatted(broken.getId(), ZONE)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VESSEL_NOT_AVAILABLE"));
     }
@@ -128,9 +130,40 @@ class TripRulesTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/faenas").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"vesselId":"%s","zone":"%s"}""".formatted(foreign.getId(), ZONE)))
+                        {"vesselId":"%s","zone":"%s","originPort":"Bahía Solano"}"""
+                        .formatted(foreign.getId(), ZONE)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("VESSEL_NOT_OWNED"));
+    }
+
+    // ------------------------------------------------------------------
+    // AC-03.2 · campos obligatorios de la bitácora
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("AC-03.2: rechaza abrir una faena sin puerto de origen")
+    void rejectsTripWithoutOriginPort() throws Exception {
+        givenValidPermit();
+
+        mockMvc.perform(post("/api/v1/faenas").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"vesselId":"%s","zone":"%s"}""".formatted(vessel.getId(), ZONE)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("AC-03.2: rechaza cerrar una faena sin ubicación GPS de desembarco")
+    void rejectsCloseWithoutLandingLocation() throws Exception {
+        givenValidPermit();
+        String tripId = startedTripId();
+
+        mockMvc.perform(post("/api/v1/faenas/" + tripId + "/cerrar").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"nullDeclaration":true}"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     // ------------------------------------------------------------------
@@ -188,6 +221,46 @@ class TripRulesTest extends ApiTestSupport {
     void rejectsCatchUnderGlobalClosure() throws Exception {
         givenValidPermit();
         givenClosure(snapper, "TODAS", LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        String tripId = startedTripId();
+
+        addCatch(tripId, snapper.getId(), "40.0", "80.0")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SPECIES_UNDER_CLOSURE"));
+    }
+
+    // ------------------------------------------------------------------
+    // AC-05.5 · veda total vs. parcial (excepción de subsistencia)
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("AC-05.5: una veda parcial bloquea a quien no tiene permiso de subsistencia")
+    void blocksUnderPartialClosureWithoutSubsistencePermit() throws Exception {
+        givenValidPermit();
+        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), ClosureType.PARTIAL);
+        String tripId = startedTripId();
+
+        addCatch(tripId, snapper.getId(), "40.0", "80.0")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SPECIES_UNDER_CLOSURE"));
+    }
+
+    @Test
+    @DisplayName("AC-05.5: una veda parcial permite a quien opera con permiso de subsistencia")
+    void allowsUnderPartialClosureWithSubsistencePermit() throws Exception {
+        givenPermit(fisher, "PES-TEST-SUBS", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
+                LocalDate.now().plusMonths(6), "SUBSISTENCIA");
+        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), ClosureType.PARTIAL);
+        String tripId = startedTripId();
+
+        addCatch(tripId, snapper.getId(), "40.0", "80.0").andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("AC-05.5: una veda total bloquea incluso con permiso de subsistencia")
+    void blocksUnderTotalClosureEvenWithSubsistencePermit() throws Exception {
+        givenPermit(fisher, "PES-TEST-SUBS2", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
+                LocalDate.now().plusMonths(6), "SUBSISTENCIA");
+        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), ClosureType.TOTAL);
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0")
@@ -264,8 +337,9 @@ class TripRulesTest extends ApiTestSupport {
     void synchronizesWithoutDuplicating() throws Exception {
         givenValidPermit();
         String body = """
-                [{"id":"LOCAL-1","vesselId":"%s","zone":"%s","status":"CLOSED","nullDeclaration":true,
-                  "captures":[]}]""".formatted(vessel.getId(), ZONE);
+                [{"id":"LOCAL-1","vesselId":"%s","zone":"%s","originPort":"Bahía Solano","status":"CLOSED",
+                  "nullDeclaration":true,"captures":[],"landingLatitude":6.23,"landingLongitude":-77.4}]"""
+                .formatted(vessel.getId(), ZONE);
 
         mockMvc.perform(post("/api/v1/faenas/sincronizar").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON).content(body))
@@ -295,7 +369,8 @@ class TripRulesTest extends ApiTestSupport {
         return mockMvc.perform(post("/api/v1/faenas").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"vesselId":"%s","zone":"%s"}""".formatted(vessel.getId(), ZONE)));
+                        {"vesselId":"%s","zone":"%s","originPort":"Bahía Solano"}"""
+                        .formatted(vessel.getId(), ZONE)));
     }
 
     private String startedTripId() throws Exception {
@@ -309,7 +384,7 @@ class TripRulesTest extends ApiTestSupport {
         return mockMvc.perform(post("/api/v1/faenas/" + tripId + "/capturas").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"speciesId":"%s","weightKg":%s,"averageSizeCm":%s}"""
+                        {"speciesId":"%s","quantity":5,"weightKg":%s,"averageSizeCm":%s}"""
                         .formatted(speciesId, weight, size)));
     }
 
@@ -318,6 +393,7 @@ class TripRulesTest extends ApiTestSupport {
         return mockMvc.perform(post("/api/v1/faenas/" + tripId + "/cerrar").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nullDeclaration":%s}""".formatted(nullDeclaration)));
+                        {"nullDeclaration":%s,"landingLatitude":6.23,"landingLongitude":-77.4}"""
+                        .formatted(nullDeclaration)));
     }
 }

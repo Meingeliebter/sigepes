@@ -95,9 +95,10 @@ export interface Capture {
   id: string;
   speciesId: string;
   species: string;
-  quantity?: number | null;
+  quantity: number;
   weightKg: number;
   averageSizeCm: number;
+  minSizeCmAtCapture?: number;
 }
 
 export interface Trip {
@@ -105,6 +106,7 @@ export interface Trip {
   vesselId: string;
   vessel: string;
   zone: string;
+  originPort: string;
   date: string;
   status: string;
   nullDeclaration: boolean;
@@ -113,7 +115,11 @@ export interface Trip {
   ownerName?: string;
   gear?: string | null;
   permitNumber?: string | null;
+  departureTime?: string | null;
+  arrivalTime?: string | null;
   notes?: string | null;
+  landingLatitude?: number | null;
+  landingLongitude?: number | null;
   totalWeightKg?: number;
 }
 
@@ -194,10 +200,13 @@ export interface PendingTripPayload {
   id: string;
   vesselId: string;
   zone: string;
+  originPort: string;
   date: string;
   status: string;
   nullDeclaration: boolean;
-  captures: { speciesId: string; weightKg: number; averageSizeCm: number }[];
+  captures: { speciesId: string; quantity: number; weightKg: number; averageSizeCm: number }[];
+  landingLatitude: number;
+  landingLongitude: number;
 }
 
 export const domainService = {
@@ -350,20 +359,32 @@ export const domainService = {
   async trips(): Promise<Trip[]> {
     return (await httpClient.get<Trip[]>('/faenas')).data;
   },
-  async startTrip(payload: { id?: string; vesselId: string; zone: string; date?: string }): Promise<Trip> {
+  async startTrip(payload: { id?: string; vesselId: string; zone: string; originPort: string; date?: string }): Promise<Trip> {
     return (await httpClient.post<Trip>('/faenas', payload)).data;
   },
   async addCapture(
     tripId: string,
-    payload: { speciesId: string; weightKg: number; averageSizeCm: number; quantity?: number },
+    payload: { speciesId: string; weightKg: number; averageSizeCm: number; quantity: number },
   ): Promise<Trip> {
     return (await httpClient.post<Trip>(`/faenas/${tripId}/capturas`, payload)).data;
   },
-  async closeTrip(tripId: string, nullDeclaration: boolean): Promise<Trip> {
-    return (await httpClient.post<Trip>(`/faenas/${tripId}/cerrar`, { nullDeclaration })).data;
+  async closeTrip(
+    tripId: string,
+    payload: { nullDeclaration: boolean; landingLatitude: number; landingLongitude: number },
+  ): Promise<Trip> {
+    return (await httpClient.post<Trip>(`/faenas/${tripId}/cerrar`, payload)).data;
   },
   async sync(pending: PendingTripPayload[]): Promise<Trip[]> {
     return (await httpClient.post<Trip[]>('/faenas/sincronizar', pending)).data;
+  },
+  /** AC-03.5: corrige una faena; si ya está cerrada, `reason` es obligatorio (lo valida el backend). */
+  async correctTrip(
+    id: string,
+    payload: { zone?: string; arrivalTime?: string; notes?: string; reason?: string },
+  ): Promise<Trip> {
+    const { zone, ...body } = payload;
+    const query = zone ? `?zone=${encodeURIComponent(zone)}` : '';
+    return (await httpClient.patch<Trip>(`/faenas/${id}${query}`, body)).data;
   },
 
   // --- Administración y auditoría (RF-20) -----------------------------

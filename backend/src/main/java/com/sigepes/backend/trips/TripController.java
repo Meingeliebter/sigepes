@@ -67,7 +67,8 @@ public class TripController {
     @PreAuthorize("hasAnyRole('FISHER','SHIPOWNER','ADMIN')")
     @Operation(summary = "Cierra una faena con capturas o con declaración de captura nula")
     public TripResponse close(@PathVariable String id, @RequestBody(required = false) CloseTripRequest request) {
-        return tripService.close(id, request == null ? new CloseTripRequest(false, null, null) : request);
+        return tripService.close(id, request == null ? new CloseTripRequest(false, null, null, null, null, null)
+                : request);
     }
 
     @PatchMapping("/{id}")

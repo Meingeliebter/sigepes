@@ -115,7 +115,8 @@ class TripWithoutAmbientTransactionTest {
         String created = mockMvc.perform(post("/api/v1/faenas").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"vesselId":"%s","zone":"%s"}""".formatted(vessel.getId(), ZONE)))
+                        {"vesselId":"%s","zone":"%s","originPort":"Bahía Solano"}"""
+                        .formatted(vessel.getId(), ZONE)))
                 .andExpect(status().isCreated())
                 // Serializa el permiso, que es una asociación perezosa: aquí saltaría el fallo.
                 .andExpect(jsonPath("$.permitNumber").value("PES-NOTX-1"))
@@ -136,7 +137,7 @@ class TripWithoutAmbientTransactionTest {
         mockMvc.perform(post("/api/v1/faenas/" + tripId + "/cerrar").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nullDeclaration":false}"""))
+                        {"nullDeclaration":false,"landingLatitude":6.23,"landingLongitude":-77.4}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CLOSED"));
 

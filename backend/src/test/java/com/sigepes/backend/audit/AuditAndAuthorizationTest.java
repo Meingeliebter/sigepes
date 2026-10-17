@@ -76,7 +76,8 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
         String tripResponse = mockMvc.perform(post("/api/v1/faenas").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"vesselId":"%s","zone":"Pacífico Norte"}""".formatted(vessel.getId())))
+                        {"vesselId":"%s","zone":"Pacífico Norte","originPort":"Bahía Solano"}"""
+                        .formatted(vessel.getId())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String tripId = extract(tripResponse, "id");
@@ -84,7 +85,7 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/faenas/" + tripId + "/cerrar").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nullDeclaration":true}"""))
+                        {"nullDeclaration":true,"landingLatitude":6.23,"landingLongitude":-77.4}"""))
                 .andExpect(status().isOk());
 
         assertTrue(hasAction("TRIP_STARTED"));
@@ -122,16 +123,20 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
         String tripId = extract(mockMvc.perform(post("/api/v1/faenas").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"vesselId":"%s","zone":"Caribe"}""".formatted(vessel.getId())))
+                        {"vesselId":"%s","zone":"Caribe","originPort":"Tumaco"}"""
+                        .formatted(vessel.getId())))
                 .andReturn().getResponse().getContentAsString(), "id");
 
         mockMvc.perform(post("/api/v1/faenas/" + tripId + "/capturas").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"speciesId":"%s","weightKg":50,"averageSizeCm":35}""".formatted(species.getId())))
+                        {"speciesId":"%s","quantity":3,"weightKg":50,"averageSizeCm":35}"""
+                        .formatted(species.getId())))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/faenas/" + tripId + "/cerrar").header("Authorization", fisherToken)
-                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"landingLatitude":1.21,"landingLongitude":-78.75}"""))
                 .andExpect(status().isOk());
 
         // Cerrada: el pescador ya no puede corregirla, la autoridad sí.
@@ -141,13 +146,25 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
                         {"notes":"intento"}"""))
                 .andExpect(status().isForbidden());
 
+        // AC-03.5: sin motivo, la autoridad tampoco puede corregir una faena ya cerrada.
         mockMvc.perform(patch("/api/v1/faenas/" + tripId).header("Authorization", inspectorToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"notes":"Corrección por inspección en muelle"}"""))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(patch("/api/v1/faenas/" + tripId).header("Authorization", inspectorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"notes":"Corrección por inspección en muelle","reason":"Peso mal digitado en el muelle"}"""))
                 .andExpect(status().isOk());
 
         assertTrue(hasAction("TRIP_CORRECTED"));
+        AuditLogEntity correction = auditLogRepository.findAll().stream()
+                .filter(log -> "TRIP_CORRECTED".equals(log.getAction()))
+                .findFirst().orElseThrow();
+        assertTrue(correction.getDetail().contains("Peso mal digitado en el muelle"),
+                "El detalle auditado debe incluir el motivo del cambio");
     }
 
     @Test
