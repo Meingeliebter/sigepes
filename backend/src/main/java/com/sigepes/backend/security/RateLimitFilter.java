@@ -34,6 +34,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final String REGISTER_PATH = "/api/v1/auth/register";
     private static final String REPORTS_PATH = "/api/v1/denuncias";
     private static final String TRACKING_PREFIX = "/api/v1/denuncias/seguimiento/";
+    private static final String LOT_PREFIX = "/api/v1/trazabilidad/";
 
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
     private final int maxAttemptsPerMinute;
@@ -61,6 +62,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if ("GET".equalsIgnoreCase(method) && path.startsWith(TRACKING_PREFIX)) {
             return TRACKING_PREFIX;
         }
+        if ("GET".equalsIgnoreCase(method) && path.startsWith(LOT_PREFIX)) {
+            return LOT_PREFIX;
+        }
         return null;
     }
 
@@ -68,7 +72,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String bucket = bucket(request);
-        int limit = bucket.startsWith(REPORTS_PATH) ? maxPublicRequestsPerMinute : maxAttemptsPerMinute;
+        boolean publicEndpoint = bucket.startsWith(REPORTS_PATH) || bucket.equals(LOT_PREFIX);
+        int limit = publicEndpoint ? maxPublicRequestsPerMinute : maxAttemptsPerMinute;
         String key = bucket + "|" + request.getRemoteAddr();
         long minute = Instant.now().getEpochSecond() / 60;
         Window window = windows.compute(key,

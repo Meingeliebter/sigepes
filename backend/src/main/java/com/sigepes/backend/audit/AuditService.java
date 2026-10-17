@@ -42,6 +42,7 @@ public class AuditService {
     public static final String MODULE_QUOTAS = "cuotas";
     public static final String MODULE_GEO = "geolocalizacion";
     public static final String MODULE_REPORTS = "denuncias";
+    public static final String MODULE_TRACEABILITY = "trazabilidad";
 
     private static final int MAX_DETAIL = 600;
     private static final int MAX_STATE = 2000;

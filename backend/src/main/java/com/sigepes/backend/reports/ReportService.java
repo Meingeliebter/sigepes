@@ -1,6 +1,5 @@
 package com.sigepes.backend.reports;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.common.ApiException;
+import com.sigepes.backend.common.Codes;
 import com.sigepes.backend.common.ErrorCode;
 import com.sigepes.backend.common.FileStorageService;
 import com.sigepes.backend.common.FileStorageService.StoredFile;
@@ -42,10 +42,6 @@ import com.sigepes.backend.users.UserService;
 public class ReportService {
 
     static final int MAX_PHOTOS = 3;
-    /** Sin 0/O ni 1/I/L, para que el código se pueda dictar por teléfono sin confusiones. */
-    private static final char[] CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ".toCharArray();
-    private static final int CODE_LENGTH = 8;
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final IllegalReportRepository reportRepository;
     private final ReportPhotoRepository photoRepository;
@@ -235,12 +231,9 @@ public class ReportService {
 
     private String newTrackingCode() {
         for (int attempt = 0; attempt < 5; attempt++) {
-            StringBuilder code = new StringBuilder("DEN-");
-            for (int i = 0; i < CODE_LENGTH; i++) {
-                code.append(CODE_ALPHABET[RANDOM.nextInt(CODE_ALPHABET.length)]);
-            }
-            if (!reportRepository.existsByTrackingCode(code.toString())) {
-                return code.toString();
+            String code = Codes.random("DEN", 8);
+            if (!reportRepository.existsByTrackingCode(code)) {
+                return code;
             }
         }
         throw ApiException.of(ErrorCode.INTERNAL_ERROR, "No fue posible generar el código de seguimiento.");

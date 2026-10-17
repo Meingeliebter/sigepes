@@ -79,6 +79,11 @@ public enum ErrorCode {
     INVALID_REPORT_PHOTO(HttpStatus.BAD_REQUEST, "La foto adjunta no es válida."),
     TOO_MANY_REPORT_PHOTOS(HttpStatus.BAD_REQUEST, "Una denuncia admite como máximo 3 fotos."),
 
+    // --- Trazabilidad (RF-09) -----------------------------------------
+    LOT_NOT_FOUND(HttpStatus.NOT_FOUND, "El lote no existe."),
+    LOT_NOT_LEGAL(HttpStatus.UNPROCESSABLE_ENTITY, "La captura no cumple las condiciones de origen legal."),
+    LOT_WEIGHT_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "El peso supera los kilos disponibles de la captura."),
+
     // --- Alertas (RF-11) ----------------------------------------------
     ALERT_NOT_FOUND(HttpStatus.NOT_FOUND, "La alerta no existe."),
     ALERT_CRITICAL_PERSISTENT(HttpStatus.UNPROCESSABLE_ENTITY,

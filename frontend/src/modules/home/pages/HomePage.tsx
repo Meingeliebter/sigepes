@@ -9,9 +9,9 @@ import GavelIcon from '@mui/icons-material/Gavel';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MenuIcon from '@mui/icons-material/Menu';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
-import PhishingIcon from '@mui/icons-material/Phishing';
 import PhoneIcon from '@mui/icons-material/Phone';
 import PublicIcon from '@mui/icons-material/Public';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import {
   Box, Button, ButtonBase, Chip, Drawer, IconButton, Link, List, ListItem, Stack, Toolbar, Typography,
 } from '@mui/material';
@@ -41,7 +41,7 @@ const QUICK_ACCESS = [
   { label: 'Bitácora de faenas', description: 'Registra faenas y capturas', icon: <MenuBookIcon />, to: '/app/trips' },
   { label: 'Embarcaciones', description: 'Registro de embarcaciones y artes', icon: <DirectionsBoatIcon />, to: '/app/vessels' },
   { label: 'Permisos de pesca', description: 'Solicita y consulta tu licencia', icon: <GavelIcon />, to: '/app/permits' },
-  { label: 'Catálogo de especies', description: 'Tallas mínimas legales', icon: <PhishingIcon />, to: '/app/species' },
+  { label: 'Verificar un lote', description: 'Origen legal por código QR', icon: <QrCode2Icon />, to: '/verificar' },
   { label: 'Vedas vigentes', description: 'Zonas y periodos restringidos', icon: <BlockIcon />, to: '/app/closures' },
   { label: 'Denunciar pesca ilegal', description: 'Anónimo y sin cuenta', icon: <CampaignOutlinedIcon />, to: '/denunciar' },
 ];
