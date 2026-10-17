@@ -133,7 +133,17 @@ jobs:
           # El dominio de FRONTEND_URL se fija en cada despliegue: renombrar el proyecto en Vercel ya no
           # deja el dominio público apuntando a nada (DEPLOYMENT_NOT_FOUND).
           host="${FRONTEND_URL#https://}"; host="${host%%/*}"
-          npx --yes "$VERCEL_CLI" alias set "$DEPLOY_URL" "$host" --token="$VERCEL_TOKEN"
+          api="https://api.vercel.com"
+          q="teamId=$VERCEL_ORG_ID"
+          auth="Authorization: Bearer $VERCEL_TOKEN"
+          # 1. El dominio queda asociado al proyecto (si ya lo está, Vercel responde 409 y se sigue).
+          code=$(curl -s -o /tmp/domain.json -w '%{http_code}' -X POST "$api/v10/projects/$VERCEL_PROJECT_ID/domains?$q"             -H "$auth" -H 'Content-Type: application/json' -d "{\"name\":\"$host\"}")
+          echo "Dominio $host en el proyecto: HTTP $code $(head -c 300 /tmp/domain.json)"
+          # 2. Se asigna explícitamente al despliegue recién publicado.
+          id=$(curl -fsS "$api/v13/deployments/${DEPLOY_URL#https://}?$q" -H "$auth" | jq -r .id)
+          code=$(curl -s -o /tmp/alias.json -w '%{http_code}' -X POST "$api/v2/deployments/$id/aliases?$q"             -H "$auth" -H 'Content-Type: application/json' -d "{\"alias\":\"$host\"}")
+          echo "Alias $host -> $id: HTTP $code $(head -c 300 /tmp/alias.json)"
+          [ "$code" -lt 300 ] || { echo "::error::Vercel no asignó $host al despliegue (revisa Settings → Domains del proyecto)."; exit 1; }
       - name: Prueba de humo
         if: steps.config.outputs.ready == 'true'
         env:
