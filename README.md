@@ -81,9 +81,12 @@ repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Railway](https://railway
 
      `JWT_SECRET` lo genera Railway y las credenciales de la base se enlazan solas. Ajusta
      `FRONTEND_URL` cuando conozcas tu dominio de Vercel (paso 2).
-   - En `sigepes-api` → *Settings*: en **Volumes** añade un volumen montado en **`/var/data`**, y en
-     **Networking → Generate Domain** crea la URL pública (p. ej.
+   - **Volumen:** los volúmenes no están en *Settings* del servicio. En el lienzo del proyecto haz clic
+     derecho sobre `sigepes-api` → **Attach volume** (o `Ctrl/⌘ + K` → *Volume*) y móntalo en
+     **`/var/data`**. Deja la API en la **misma región que `Postgres`** (*Settings → Regions*).
+   - En `sigepes-api` → *Settings → Networking → Generate Domain* crea la URL pública (p. ej.
      `https://sigepes-api-production.up.railway.app`).
+   - Pulsa **Deploy** arriba en el lienzo para aplicar los cambios pendientes.
    - *Project Settings → Tokens*: crea un **token de proyecto** para el entorno `production`.
 2. **Proyecto en Vercel.** *Add New → Project →* importa este repositorio con
    **Root Directory = `frontend`** y *Deploy*. Anota el dominio (p. ej. `https://sigepes.vercel.app`).
