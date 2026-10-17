@@ -30,6 +30,7 @@ import com.sigepes.backend.audit.AuditLogEntity;
 import com.sigepes.backend.audit.AuditLogRepository;
 import com.sigepes.backend.support.ApiTestSupport;
 import com.sigepes.backend.users.Role;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-10 · RF-10 / RN-20 · Denuncias de pesca ilegal. */
 @RecordApplicationEvents
@@ -216,7 +217,7 @@ class ReportRulesTest extends ApiTestSupport {
     void requiresLocation() throws Exception {
         submit(null, """
                 {"reportType":"OTHER","description":"Pesca con dinamita cerca de la costa","occurredOn":"%s",
-                 "anonymous":true}""".formatted(LocalDate.now()))
+                 "anonymous":true}""".formatted(AppClock.today()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
@@ -247,7 +248,7 @@ class ReportRulesTest extends ApiTestSupport {
         return """
                 {%s"reportType":"CLOSURE_FISHING","description":"Embarcación pescando camarón en plena veda",
                  "occurredOn":"%s","latitude":6.21,"longitude":-77.5,"anonymous":%s}"""
-                .formatted(clientId == null ? "" : "\"clientId\":\"" + clientId + "\",", LocalDate.now(), anonymous);
+                .formatted(clientId == null ? "" : "\"clientId\":\"" + clientId + "\",", AppClock.today(), anonymous);
     }
 
     private static MockMultipartFile jpegPhoto() throws Exception {

@@ -26,6 +26,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-07 · RF-07 / RN-14 · Control de cuotas de pesca por especie. */
 @RecordApplicationEvents
@@ -50,8 +51,8 @@ class QuotaRulesTest extends ApiTestSupport {
         givenUser("4040404040", "analista.cuota@sigepes.gov.co", Role.ANALYST);
         vessel = givenVessel(fisher, "DIMAR-CUO-001", VesselStatus.ACTIVE, givenGear("Línea cuota", false));
         snapper = givenSpecies("Pargo cuota", new BigDecimal("35.00"));
-        givenPermit(fisher, "PES-CUO-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusMonths(6));
+        givenPermit(fisher, "PES-CUO-1", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusMonths(6));
         fisherToken = bearerFor("pescador.cuota@sigepes.gov.co");
     }
 
@@ -63,8 +64,8 @@ class QuotaRulesTest extends ApiTestSupport {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"speciesId":"%s","zone":"%s","from":"%s","to":"%s","totalKg":2000}"""
-                        .formatted(snapper.getId(), ZONE, LocalDate.now().minusDays(1),
-                                LocalDate.now().plusMonths(2))))
+                        .formatted(snapper.getId(), ZONE, AppClock.today().minusDays(1),
+                                AppClock.today().plusMonths(2))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.remainingKg").value(2000))
                 .andExpect(jsonPath("$.consumedPercent").value(0));
@@ -77,7 +78,7 @@ class QuotaRulesTest extends ApiTestSupport {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"speciesId":"%s","zone":"%s","from":"%s","to":"%s","totalKg":10}"""
-                        .formatted(snapper.getId(), ZONE, LocalDate.now(), LocalDate.now().plusDays(5))))
+                        .formatted(snapper.getId(), ZONE, AppClock.today(), AppClock.today().plusDays(5))))
                 .andExpect(status().isForbidden());
     }
 
@@ -164,8 +165,8 @@ class QuotaRulesTest extends ApiTestSupport {
     }
 
     private QuotaEntity givenQuota(String total, String consumed) {
-        QuotaEntity quota = new QuotaEntity(Ids.generate("cuo"), snapper, ZONE, LocalDate.now().minusDays(10),
-                LocalDate.now().plusMonths(1), new BigDecimal(total));
+        QuotaEntity quota = new QuotaEntity(Ids.generate("cuo"), snapper, ZONE, AppClock.today().minusDays(10),
+                AppClock.today().plusMonths(1), new BigDecimal(total));
         quota.consume(new BigDecimal(consumed));
         return quotaRepository.save(quota);
     }
