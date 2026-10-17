@@ -14,4 +14,7 @@ public interface FishingTripRepository extends JpaRepository<FishingTripEntity, 
     long countByOwnerIdAndTripDateGreaterThanEqual(String ownerId, LocalDate from);
 
     long countByTripDateGreaterThanEqual(LocalDate from);
+
+    /** RF-12 · Faenas por estado en un periodo (las abiertas no entran en los indicadores, RN-24). */
+    List<FishingTripEntity> findByTripDateBetween(LocalDate from, LocalDate to);
 }

@@ -13,6 +13,7 @@ const ALL: Role[] = ['FISHER', 'SHIPOWNER', 'INSPECTOR', 'ANALYST', 'ADMIN'];
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/app/dashboard', icon: 'dashboard', roles: ALL, group: 'Operación' },
+  { label: 'Indicadores', path: '/app/indicators', icon: 'insights', roles: ALL, group: 'Operación' },
   { label: 'Embarcaciones', path: '/app/vessels', icon: 'boat', roles: ALL, group: 'Operación' },
   { label: 'Bitácora de faenas', path: '/app/trips', icon: 'book', roles: ALL, group: 'Operación' },
   { label: 'Permisos', path: '/app/permits', icon: 'gavel', roles: ALL, group: 'Operación' },
