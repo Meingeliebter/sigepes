@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
+import com.sigepes.backend.closures.ClosureType;
 import com.sigepes.backend.common.ApiException;
 import com.sigepes.backend.common.ErrorCode;
 import com.sigepes.backend.gears.FishingGearEntity;
@@ -77,7 +78,7 @@ public class ComplianceService {
 
         Optional<PermitEntity> subsistence = allOfOwner.stream()
                 .filter(permit -> permit.getStatus() == PermitStatus.APPROVED)
-                .filter(permit -> subsistenceTypes.contains(permit.getType().toUpperCase(Locale.ROOT)))
+                .filter(this::isSubsistence)
                 .findFirst();
         if (subsistence.isPresent()) {
             return subsistence.get();
@@ -139,18 +140,33 @@ public class ComplianceService {
         }
     }
 
-    /** RN-10 · No se admite captura de una especie en veda para esa zona y fecha. */
+    /**
+     * RN-10 · No se admite captura de una especie en veda para esa zona y fecha.
+     *
+     * <p>AC-05.5: una veda {@code PARTIAL} deja pasar a quien opera al amparo de un permiso de
+     * subsistencia (mismo catálogo de tipos que ya exime la vigencia del permiso en
+     * {@link #requireValidPermit}); una veda {@code TOTAL} bloquea siempre, sin excepción.
+     */
     @Transactional(readOnly = true)
-    public void requireNoClosure(SpeciesEntity species, LocalDate date, String zone) {
+    public void requireNoClosure(SpeciesEntity species, LocalDate date, String zone, PermitEntity permit) {
         Optional<ClosureEntity> blocking = closureRepository.findInForceForSpecies(species.getId(), date).stream()
                 .filter(closure -> closure.coversZone(zone))
                 .findFirst();
-        if (blocking.isPresent()) {
-            ClosureEntity closure = blocking.get();
-            throw ApiException.of(ErrorCode.SPECIES_UNDER_CLOSURE,
-                    "«" + species.getCommonName() + "» está en veda en " + closure.getZone() + " del "
-                            + closure.getStartDate() + " al " + closure.getEndDate() + ".");
+        if (blocking.isEmpty()) {
+            return;
         }
+        ClosureEntity closure = blocking.get();
+        if (closure.getClosureType() == ClosureType.PARTIAL && isSubsistence(permit)) {
+            return;
+        }
+        throw ApiException.of(ErrorCode.SPECIES_UNDER_CLOSURE,
+                "«" + species.getCommonName() + "» está en veda " + closure.getClosureType().name().toLowerCase(Locale.ROOT)
+                        + " en " + closure.getZone() + " del " + closure.getStartDate() + " al "
+                        + closure.getEndDate() + " (Resolución " + closure.getResolutionNumber() + ").");
+    }
+
+    private boolean isSubsistence(PermitEntity permit) {
+        return permit != null && subsistenceTypes.contains(permit.getType().toUpperCase(Locale.ROOT));
     }
 
     /**

@@ -62,6 +62,8 @@ export interface Closure {
   status: string;
   inForce?: boolean;
   reason?: string | null;
+  resolutionNumber: string;
+  closureType: string;
   notes?: string | null;
 }
 
@@ -274,6 +276,31 @@ export const domainService = {
   /** Solo las vedas vigentes hoy; se usa para avisar en el formulario de faena. */
   async activeClosures(): Promise<Closure[]> {
     return (await httpClient.get<Closure[]>('/vedas/activas')).data;
+  },
+  async createClosure(payload: {
+    speciesId: string;
+    zone: string;
+    from: string;
+    to: string;
+    resolutionNumber: string;
+    closureType: string;
+    reason?: string;
+    notes?: string;
+  }): Promise<Closure> {
+    return (await httpClient.post<Closure>('/vedas', payload)).data;
+  },
+  async updateClosure(
+    id: string,
+    payload: Partial<{
+      status: string;
+      from: string;
+      to: string;
+      resolutionNumber: string;
+      closureType: string;
+      notes: string;
+    }>,
+  ): Promise<Closure> {
+    return (await httpClient.patch<Closure>(`/vedas/${id}`, payload)).data;
   },
 
   // --- Permisos (RF-08) -----------------------------------------------

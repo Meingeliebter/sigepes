@@ -212,7 +212,8 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/vedas").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"speciesId":"%s","zone":"Caribe","from":"2026-01-01","to":"2026-02-01"}"""
+                        {"speciesId":"%s","zone":"Caribe","from":"2026-01-01","to":"2026-02-01",
+                        "resolutionNumber":"AUNAP-0001-2026","closureType":"TOTAL"}"""
                         .formatted(species.getId())))
                 .andExpect(status().isForbidden());
     }

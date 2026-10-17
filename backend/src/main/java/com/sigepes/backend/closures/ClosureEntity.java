@@ -48,6 +48,15 @@ public class ClosureEntity {
     @Column(name = "reason", length = 400)
     private String reason;
 
+    /** AC-05.4: referencia al documento legal de respaldo (p. ej. número de Resolución AUNAP). */
+    @Column(name = "resolution_number", length = 120, nullable = false)
+    private String resolutionNumber;
+
+    /** AC-05.5: alcance de la veda (total o excepción de subsistencia). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "closure_type", length = 20, nullable = false)
+    private ClosureType closureType;
+
     @Column(name = "notes", length = 400)
     private String notes;
 
@@ -68,13 +77,15 @@ public class ClosureEntity {
     }
 
     public ClosureEntity(String id, SpeciesEntity species, String zone, LocalDate startDate, LocalDate endDate,
-            ClosureStatus status) {
+            ClosureStatus status, String resolutionNumber, ClosureType closureType) {
         this.id = id;
         this.species = species;
         this.zone = zone;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
+        this.resolutionNumber = resolutionNumber;
+        this.closureType = closureType;
     }
 
     @PrePersist
@@ -162,6 +173,22 @@ public class ClosureEntity {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public String getResolutionNumber() {
+        return resolutionNumber;
+    }
+
+    public void setResolutionNumber(String resolutionNumber) {
+        this.resolutionNumber = resolutionNumber;
+    }
+
+    public ClosureType getClosureType() {
+        return closureType;
+    }
+
+    public void setClosureType(ClosureType closureType) {
+        this.closureType = closureType;
     }
 
     public String getNotes() {

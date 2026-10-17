@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
 import com.sigepes.backend.closures.ClosureStatus;
+import com.sigepes.backend.closures.ClosureType;
 import com.sigepes.backend.common.Ids;
 import com.sigepes.backend.gears.FishingGearEntity;
 import com.sigepes.backend.gears.FishingGearRepository;
@@ -112,8 +113,13 @@ public abstract class ApiTestSupport {
     }
 
     protected ClosureEntity givenClosure(SpeciesEntity species, String zone, LocalDate from, LocalDate to) {
+        return givenClosure(species, zone, from, to, ClosureType.TOTAL);
+    }
+
+    protected ClosureEntity givenClosure(SpeciesEntity species, String zone, LocalDate from, LocalDate to,
+            ClosureType closureType) {
         ClosureEntity closure = new ClosureEntity(Ids.generate("ved"), species, zone, from, to,
-                ClosureStatus.SCHEDULED);
+                ClosureStatus.SCHEDULED, "AUNAP-TEST-0001", closureType);
         closure.setStatus(closure.effectiveStatus(LocalDate.now()));
         return closureRepository.save(closure);
     }
