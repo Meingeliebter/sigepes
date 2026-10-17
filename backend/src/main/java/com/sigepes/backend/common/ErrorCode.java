@@ -79,6 +79,11 @@ public enum ErrorCode {
     INVALID_REPORT_PHOTO(HttpStatus.BAD_REQUEST, "La foto adjunta no es válida."),
     TOO_MANY_REPORT_PHOTOS(HttpStatus.BAD_REQUEST, "Una denuncia admite como máximo 3 fotos."),
 
+    // --- Alertas (RF-11) ----------------------------------------------
+    ALERT_NOT_FOUND(HttpStatus.NOT_FOUND, "La alerta no existe."),
+    ALERT_CRITICAL_PERSISTENT(HttpStatus.UNPROCESSABLE_ENTITY,
+            "Las alertas críticas de cumplimiento no se pueden archivar."),
+
     // --- Genéricos ----------------------------------------------------
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Hay errores de validación en la solicitud."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "La operación no está permitida sobre este recurso."),

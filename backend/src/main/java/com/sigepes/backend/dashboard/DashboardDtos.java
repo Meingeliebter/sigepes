@@ -29,20 +29,4 @@ public final class DashboardDtos {
             List<ActivityResponse> recent,
             List<ComplianceResponse> compliance) {
     }
-
-    /**
-     * Notificación derivada de datos reales del MVP (vedas vigentes y permisos por vencer).
-     *
-     * <p>{@code type} permite a la interfaz elegir el icono y el color que ya tiene definidos.
-     * {@code severity} (AC-08.2) distingue qué tan urgente es (p. ej. un permiso a 5 días de vencer
-     * es {@code CRITICAL}, a 15 días {@code WARNING}, a 30 días {@code INFO}).
-     */
-    public record NotificationResponse(
-            String id,
-            String type,
-            String title,
-            String body,
-            String date,
-            String severity) {
-    }
 }

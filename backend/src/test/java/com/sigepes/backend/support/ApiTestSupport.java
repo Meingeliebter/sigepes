@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.alerts.AlertSweeper;
 import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
 import com.sigepes.backend.closures.ClosureStatus;
@@ -78,6 +79,10 @@ public abstract class ApiTestSupport {
 
     @Autowired
     protected PermitRepository permitRepository;
+
+    /** Las alertas por calendario no corren solas en pruebas (sweep-enabled=false): se invocan. */
+    @Autowired
+    protected AlertSweeper alertSweeper;
 
     protected UserEntity givenUser(String nationalId, String email, Role role) {
         return userService.create(nationalId, "Usuario " + role, email, role, PASSWORD, false);
