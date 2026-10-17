@@ -308,6 +308,50 @@ export interface DashboardSummary {
   compliance: ComplianceRow[];
 }
 
+export type Region = 'PACIFICO' | 'CARIBE' | 'OTRA';
+
+export interface IndicatorFilters {
+  from?: string;
+  to?: string;
+  region?: Region | '';
+  speciesId?: string;
+}
+
+export interface SpeciesLanding {
+  speciesId: string;
+  speciesName: string;
+  kg: number;
+  trips: number;
+}
+
+export interface IndicatorsResponse {
+  filters: { from: string; to: string; region?: Region; speciesId?: string };
+  generatedAt: string;
+  totals: {
+    landedKg: number;
+    closedTrips: number;
+    excludedOpenTrips: number;
+    activeClosures: number;
+    openReports: number;
+    zoneEvents: number;
+  };
+  landingsBySpecies: SpeciesLanding[];
+  landingsByRegion: { region: Region; kg: number }[];
+  quotas: { id: string; speciesName: string; zone: string; totalKg: number; remainingKg: number; consumedPercent: number }[];
+  closures: { speciesName: string; zone: string; until: string }[];
+  permitsByStatus: { status: string; count: number }[];
+  reportsByStatus: { status: string; count: number }[];
+  zoneEvents: { zoneName: string; total: number; open: number }[];
+}
+
+export interface OwnIndicators {
+  filters: { from: string; to: string; region?: Region; speciesId?: string };
+  landedKg: number;
+  closedTrips: number;
+  openTrips: number;
+  landingsBySpecies: SpeciesLanding[];
+}
+
 export interface LegalCheck {
   key: string;
   label: string;
@@ -404,6 +448,15 @@ export interface PendingTripPayload {
   captures: { speciesId: string; quantity: number; weightKg: number; averageSizeCm: number }[];
   landingLatitude: number;
   landingLongitude: number;
+}
+
+function indicatorParams(filters: IndicatorFilters) {
+  return {
+    desde: filters.from || undefined,
+    hasta: filters.to || undefined,
+    region: filters.region || undefined,
+    especieId: filters.speciesId || undefined,
+  };
 }
 
 export const domainService = {
@@ -711,6 +764,15 @@ export const domainService = {
   async summary(): Promise<DashboardSummary> {
     return (await httpClient.get<DashboardSummary>('/resumen')).data;
   },
+  // --- Indicadores (RF-12) ---------------------------------------------
+  async indicators(filters: IndicatorFilters): Promise<IndicatorsResponse> {
+    return (await httpClient.get<IndicatorsResponse>('/indicadores', { params: indicatorParams(filters) })).data;
+  },
+  /** AC-12.6: un pescador o armador solo consulta sus propias cifras. */
+  async ownIndicators(filters: IndicatorFilters): Promise<OwnIndicators> {
+    return (await httpClient.get<OwnIndicators>('/indicadores/mios', { params: indicatorParams(filters) })).data;
+  },
+
   // --- Trazabilidad (RF-09) --------------------------------------------
   async lots(): Promise<Lot[]> {
     return (await httpClient.get<Lot[]>('/lotes')).data;

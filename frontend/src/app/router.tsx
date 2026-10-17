@@ -25,6 +25,7 @@ import { PublicReportPage } from '../modules/reports/pages/PublicReportPage';
 import { NewReportPage } from '../modules/reports/pages/NewReportPage';
 import { ReportsQueuePage } from '../modules/reports/pages/ReportsQueuePage';
 import { LotsPage } from '../modules/traceability/pages/LotsPage';
+import { IndicatorsPage } from '../modules/indicators/pages/IndicatorsPage';
 import { PublicLotPage } from '../modules/traceability/pages/PublicLotPage';
 
 export const router = createBrowserRouter([
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
           { path: 'zones', element: <ZonesPage /> },
           { path: 'reports/new', element: <NewReportPage /> },
           { path: 'traceability', element: <LotsPage /> },
+          { path: 'indicators', element: <IndicatorsPage /> },
           { path: 'permits', element: <PermitsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'access-denied', element: <AccessDeniedPage /> },
