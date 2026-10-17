@@ -1,28 +1,50 @@
 # Blueprint de Render para la API y la base de datos (HU-21).
-# En Render: New → Blueprint → selecciona este repositorio. Los valores marcados con sync: false
-# se escriben en el panel de Render (almacén de secretos), nunca en este archivo (AC-21.4).
+#
+# En Render: New → Blueprint → elige este repositorio → Apply. Render crea la base de datos y el
+# servicio, genera JWT_SECRET y conecta las credenciales de la base sin que nadie las escriba
+# (AC-21.4). Solo hay que completar FRONTEND_URL con el dominio de Vercel.
+#
+# Plan gratuito: suficiente para la demo. Limitaciones conocidas:
+#   - El servicio se duerme tras 15 min sin tráfico; la primera petición tarda ~1 min en despertar.
+#   - No admite disco persistente: los archivos subidos (fotos de denuncias, documentos, exportaciones)
+#     se pierden al redesplegar. Para cumplir AC-15.6 en producción, cambia el servicio a
+#     `plan: starter` y descomenta el bloque `disk`.
+#   - La base de datos gratuita de Render caduca a los 30 días; para conservar datos, súbela de plan
+#     o usa una PostgreSQL externa definiendo DATABASE_URL, DATABASE_USER y DATABASE_PASSWORD.
 services:
   - type: web
     name: sigepes-api
     runtime: docker
     rootDir: backend
-    plan: starter
+    plan: free
     region: oregon
     healthCheckPath: /actuator/health
-    autoDeploy: false            # el despliegue lo dispara .github/workflows/deploy.yml tras CI verde
+    autoDeploy: false            # despliega .github/workflows/deploy.yml cuando el CI de main pasa
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: JWT_SECRET
-        generateValue: true
+        generateValue: true      # Render genera un secreto aleatorio; nunca está en el repositorio
       - key: FRONTEND_URL
-        sync: false              # p. ej. https://sigepes.vercel.app
+        sync: false              # p. ej. https://sigepes.vercel.app,https://sigepes-*.vercel.app
       - key: SEED_DEMO_DATA
         value: "true"
       - key: UPLOADS_DIR
         value: /var/data/uploads
-      - key: DATABASE_URL
-        sync: false              # jdbc:postgresql://<host>:5432/<db> (Render entrega host y db en la BD)
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=75 -XX:+UseSerialGC"
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: sigepes-db
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: sigepes-db
+          property: port
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: sigepes-db
+          property: database
       - key: DATABASE_USER
         fromDatabase:
           name: sigepes-db
@@ -31,12 +53,12 @@ services:
         fromDatabase:
           name: sigepes-db
           property: password
-    disk:                        # AC-15.6: archivos subidos fuera del contenedor
-      name: sigepes-uploads
-      mountPath: /var/data
-      sizeGB: 1
+    # disk:                      # AC-15.6 con plan starter: archivos fuera del contenedor
+    #   name: sigepes-uploads
+    #   mountPath: /var/data
+    #   sizeGB: 1
 
 databases:
   - name: sigepes-db
     databaseName: sigepes
-    plan: basic-256mb
+    plan: free
