@@ -124,6 +124,16 @@ jobs:
           url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "### Frontend publicado: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Asignar el dominio de producción
+        if: steps.config.outputs.ready == 'true' && vars.FRONTEND_URL != ''
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          # El dominio de FRONTEND_URL se fija en cada despliegue: renombrar el proyecto en Vercel ya no
+          # deja el dominio público apuntando a nada (DEPLOYMENT_NOT_FOUND).
+          host="${FRONTEND_URL#https://}"; host="${host%%/*}"
+          npx --yes "$VERCEL_CLI" alias set "$DEPLOY_URL" "$host" --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
       - name: Prueba de humo
         if: steps.config.outputs.ready == 'true'
         env:
