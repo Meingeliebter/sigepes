@@ -24,6 +24,8 @@ import { ZonesPage } from '../modules/zones/pages/ZonesPage';
 import { PublicReportPage } from '../modules/reports/pages/PublicReportPage';
 import { NewReportPage } from '../modules/reports/pages/NewReportPage';
 import { ReportsQueuePage } from '../modules/reports/pages/ReportsQueuePage';
+import { LotsPage } from '../modules/traceability/pages/LotsPage';
+import { PublicLotPage } from '../modules/traceability/pages/PublicLotPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
@@ -31,6 +33,9 @@ export const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
   // RF-10: la denuncia ciudadana no exige cuenta.
   { path: '/denunciar', element: <PublicReportPage /> },
+  // RF-09: el QR de cada lote abre esta verificación pública.
+  { path: '/verificar', element: <PublicLotPage /> },
+  { path: '/verificar/:code', element: <PublicLotPage /> },
   {
     element: <ProtectedRoute />,
     children: [
@@ -48,6 +53,7 @@ export const router = createBrowserRouter([
           { path: 'quotas', element: <QuotasPage /> },
           { path: 'zones', element: <ZonesPage /> },
           { path: 'reports/new', element: <NewReportPage /> },
+          { path: 'traceability', element: <LotsPage /> },
           { path: 'permits', element: <PermitsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'access-denied', element: <AccessDeniedPage /> },

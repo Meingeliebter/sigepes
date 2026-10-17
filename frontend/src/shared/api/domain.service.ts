@@ -308,6 +308,69 @@ export interface DashboardSummary {
   compliance: ComplianceRow[];
 }
 
+export interface LegalCheck {
+  key: string;
+  label: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface EligibleCatch {
+  catchId: string;
+  speciesName: string;
+  weightKg: number;
+  availableKg: number;
+  legal: boolean;
+  checks: LegalCheck[];
+}
+
+export type PartyType = 'FISHER' | 'BUYER' | 'TRADER' | 'PROCESSOR' | 'EXPORTER';
+
+export interface ChainEvent {
+  sequence: number;
+  type: 'CREATED' | 'TRANSFER';
+  partyType: PartyType;
+  partyName?: string;
+  partyTaxId?: string;
+  location: string;
+  occurredOn: string;
+  hash?: string;
+}
+
+export interface Lot {
+  id: string;
+  code: string;
+  tripId: string;
+  speciesName: string;
+  scientificName: string;
+  weightKg: number;
+  landingDate: string;
+  zone: string;
+  vesselName: string;
+  vesselRegistration: string;
+  ownerName: string;
+  currentHolder?: string;
+  integrityOk: boolean;
+  legalChecks: LegalCheck[];
+  chain: ChainEvent[];
+  createdAt: string;
+}
+
+/** AC-09.4: lo que ve cualquier comprador al escanear el QR, sin datos personales. */
+export interface PublicLot {
+  code: string;
+  speciesName: string;
+  scientificName: string;
+  weightKg: number;
+  landingDate: string;
+  zone: string;
+  vesselRegistration: string;
+  legal: boolean;
+  integrityOk: boolean;
+  legalChecks: LegalCheck[];
+  chain: ChainEvent[];
+}
+
 export type AlertType = 'CLOSURE' | 'QUOTA' | 'PERMIT' | 'ZONE' | 'REPORT' | 'SECURITY';
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 
@@ -648,6 +711,27 @@ export const domainService = {
   async summary(): Promise<DashboardSummary> {
     return (await httpClient.get<DashboardSummary>('/resumen')).data;
   },
+  // --- Trazabilidad (RF-09) --------------------------------------------
+  async lots(): Promise<Lot[]> {
+    return (await httpClient.get<Lot[]>('/lotes')).data;
+  },
+  async eligibleCatches(tripId: string): Promise<EligibleCatch[]> {
+    return (await httpClient.get<EligibleCatch[]>(`/faenas/${tripId}/capturas-para-lote`)).data;
+  },
+  async createLot(catchId: string, weightKg: number): Promise<Lot> {
+    return (await httpClient.post<Lot>('/lotes', { catchId, weightKg })).data;
+  },
+  async transferLot(
+    lotId: string,
+    payload: { partyType: PartyType; partyName: string; partyTaxId?: string; location: string; occurredOn?: string },
+  ): Promise<Lot> {
+    return (await httpClient.post<Lot>(`/lotes/${lotId}/transferencias`, payload)).data;
+  },
+  /** Público: se consulta sin token, igual que lo haría un comprador con su teléfono. */
+  async verifyLot(code: string): Promise<PublicLot> {
+    return (await publicClient.get<PublicLot>(`/trazabilidad/${encodeURIComponent(code.trim())}`)).data;
+  },
+
   // --- Alertas (RF-11) -------------------------------------------------
   async alerts(): Promise<AlertInbox> {
     return (await httpClient.get<AlertInbox>('/alertas')).data;

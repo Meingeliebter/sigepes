@@ -64,6 +64,8 @@ public class SecurityConfig {
                         // RF-10: cualquier ciudadano puede denunciar y consultar su denuncia sin cuenta.
                         .requestMatchers(HttpMethod.POST, "/api/v1/denuncias").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/denuncias/seguimiento/*").permitAll()
+                        // RF-09: cualquier comprador verifica el QR de un lote sin cuenta.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/trazabilidad/*").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll())
                 .exceptionHandling(handling -> handling
