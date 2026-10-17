@@ -7,6 +7,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.common.ApiException;
 import com.sigepes.backend.common.ErrorCode;
@@ -90,7 +91,7 @@ public class VesselService {
         vessel.setGears(resolveGears(request.gears()));
 
         VesselEntity saved = repository.save(vessel);
-        auditService.record("VESSEL_CREATED", AuditService.MODULE_VESSELS, "Embarcación", saved.getId(),
+        auditService.record(AuditActionType.CREATE, "VESSEL_CREATED", AuditService.MODULE_VESSELS, "Embarcación", saved.getId(),
                 "Alta de «" + saved.getName() + "» (matrícula " + saved.getRegistration() + ")");
         return VesselResponse.from(saved);
     }

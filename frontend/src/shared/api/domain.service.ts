@@ -93,12 +93,25 @@ export interface AuditEvent {
   timestamp: string;
   occurredAt?: string;
   actor: string;
+  actorId?: string | null;
   action: string;
+  actionType: 'CREATE' | 'UPDATE' | 'DELETE' | 'SECURITY';
   module?: string;
   entity: string;
   entityId?: string | null;
   detail: string;
   ip?: string | null;
+  beforeState?: string | null;
+  afterState?: string | null;
+}
+
+export interface AuditFilters {
+  module?: string;
+  actionType?: string;
+  actorId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
 }
 
 export interface UserRow {
@@ -235,8 +248,9 @@ export const domainService = {
   }): Promise<UserRow> {
     return (await httpClient.post<UserRow>('/usuarios', payload)).data;
   },
-  async audit(): Promise<AuditEvent[]> {
-    return (await httpClient.get<AuditEvent[]>('/auditoria')).data;
+  /** AC-20.4: filtros opcionales de fecha, tipo de acción, módulo y usuario. */
+  async audit(filters?: AuditFilters): Promise<AuditEvent[]> {
+    return (await httpClient.get<AuditEvent[]>('/auditoria', { params: filters })).data;
   },
 
   // --- Inicio y notificaciones ----------------------------------------

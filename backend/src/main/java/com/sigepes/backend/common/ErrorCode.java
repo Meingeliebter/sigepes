@@ -41,6 +41,9 @@ public enum ErrorCode {
     PERMIT_ALREADY_REGISTERED(HttpStatus.CONFLICT, "El número de permiso ya está registrado."),
     INVALID_PERMIT_STATUS(HttpStatus.BAD_REQUEST, "El estado de permiso solicitado no es válido."),
     PERMIT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "Debes indicar el motivo del rechazo o la suspensión."),
+    PERMIT_ATTACHMENTS_REQUIRED(HttpStatus.BAD_REQUEST,
+            "Debes adjuntar la copia de cédula y el certificado de propiedad de la embarcación."),
+    PERMIT_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "El adjunto solicitado no existe."),
 
     // --- Especies y vedas ---------------------------------------------
     SPECIES_NOT_FOUND(HttpStatus.NOT_FOUND, "La especie no existe."),

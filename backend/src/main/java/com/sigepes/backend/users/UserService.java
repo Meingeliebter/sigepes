@@ -1,11 +1,13 @@
 package com.sigepes.backend.users;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.common.ApiException;
 import com.sigepes.backend.common.ErrorCode;
@@ -76,8 +78,8 @@ public class UserService {
     public UserEntity createByAdmin(CreateUserRequest request) {
         UserEntity user = create(request.nationalId(), request.fullName(), request.email(),
                 Role.valueOf(request.role()), request.password(), false);
-        auditService.record("USER_CREATED", AuditService.MODULE_USERS, "Usuario", user.getId(),
-                "Alta administrativa de " + user.getEmail() + " con rol " + user.getRole());
+        auditService.record(AuditActionType.CREATE, "USER_CREATED", AuditService.MODULE_USERS, "Usuario",
+                user.getId(), "Alta administrativa de " + user.getEmail() + " con rol " + user.getRole());
         return user;
     }
 
@@ -103,6 +105,9 @@ public class UserService {
     }
 
     private static String describe(UserEntity user) {
-        return "fullName=" + user.getFullName() + "; role=" + user.getRole() + "; status=" + user.getStatus();
+        return AuditService.toJson(Map.of(
+                "fullName", user.getFullName(),
+                "role", user.getRole().name(),
+                "status", user.getStatus().name()));
     }
 }

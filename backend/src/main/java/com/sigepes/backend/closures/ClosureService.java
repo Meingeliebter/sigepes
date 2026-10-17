@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sigepes.backend.audit.AuditActionType;
 import com.sigepes.backend.audit.AuditService;
 import com.sigepes.backend.closures.ClosureDtos.ClosureResponse;
 import com.sigepes.backend.closures.ClosureDtos.CreateClosureRequest;
@@ -76,7 +77,7 @@ public class ClosureService {
         currentUser.find().ifPresent(user -> closure.setCreatedBy(userService.byId(user.id())));
 
         ClosureEntity saved = repository.save(closure);
-        auditService.record("CLOSURE_CREATED", AuditService.MODULE_CLOSURES, "Veda", saved.getId(),
+        auditService.record(AuditActionType.CREATE, "CLOSURE_CREATED", AuditService.MODULE_CLOSURES, "Veda", saved.getId(),
                 "Veda de «" + species.getCommonName() + "» en " + saved.getZone() + " del " + saved.getStartDate()
                         + " al " + saved.getEndDate());
         return saved;
