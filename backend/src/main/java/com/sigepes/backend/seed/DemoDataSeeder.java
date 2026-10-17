@@ -30,6 +30,10 @@ import com.sigepes.backend.geo.RestrictedZoneRepository;
 import com.sigepes.backend.geo.ZoneType;
 import com.sigepes.backend.quotas.QuotaEntity;
 import com.sigepes.backend.quotas.QuotaRepository;
+import com.sigepes.backend.reports.IllegalReportEntity;
+import com.sigepes.backend.reports.IllegalReportRepository;
+import com.sigepes.backend.reports.ReportStatus;
+import com.sigepes.backend.reports.ReportType;
 import com.sigepes.backend.species.MeasurementMethod;
 import com.sigepes.backend.species.SpeciesEntity;
 import com.sigepes.backend.species.SpeciesRegion;
@@ -69,13 +73,14 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final PermitRepository permitRepository;
     private final QuotaRepository quotaRepository;
     private final RestrictedZoneRepository zoneRepository;
+    private final IllegalReportRepository reportRepository;
 
     public DemoDataSeeder(
             @org.springframework.beans.factory.annotation.Value("${sigepes.seed.enabled:true}") boolean enabled,
             UserRepository userRepository, UserService userService, FishingGearRepository gearRepository,
             VesselRepository vesselRepository, SpeciesRepository speciesRepository,
             ClosureRepository closureRepository, PermitRepository permitRepository, QuotaRepository quotaRepository,
-            RestrictedZoneRepository zoneRepository) {
+            RestrictedZoneRepository zoneRepository, IllegalReportRepository reportRepository) {
         this.enabled = enabled;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -86,6 +91,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.permitRepository = permitRepository;
         this.quotaRepository = quotaRepository;
         this.zoneRepository = zoneRepository;
+        this.reportRepository = reportRepository;
     }
 
     @Override
@@ -181,7 +187,29 @@ public class DemoDataSeeder implements ApplicationRunner {
         permit("PES-0177", "Pesca artesanal", shipowner, today.minusYears(1), today.plusMonths(3),
                 PermitStatus.SUSPENDED, "Incumplimiento reiterado del reporte de desembarco.");
 
+        // --- Denuncias (RF-10): una anónima recibida y una en investigación
+        report("DEN-DEMO2345", ReportType.MPA_INTRUSION, today.minusDays(2), 6.01, -77.34,
+                "Lancha sin nombre visible calando red dentro de la ensenada de Utría al amanecer.",
+                ReportStatus.RECEIVED);
+        report("DEN-DEMO6789", ReportType.UNDERSIZED_CATCH, today.minusDays(6), null, null,
+                "En el muelle de Bahía Solano se ofrece pargo rojo muy por debajo de la talla mínima.",
+                ReportStatus.INVESTIGATING);
+
         log.info("Datos DEMO cargados. Usuarios de prueba con contraseña «{}».", DEMO_PASSWORD);
+    }
+
+    private void report(String code, ReportType type, LocalDate occurredOn, Double latitude, Double longitude,
+            String description, ReportStatus status) {
+        IllegalReportEntity report = new IllegalReportEntity(prefixedId("den", code), code, type, description,
+                occurredOn, null);
+        if (latitude != null) {
+            report.setLocation(BigDecimal.valueOf(latitude), BigDecimal.valueOf(longitude));
+        } else {
+            report.setLocationText("Muelle principal de Bahía Solano");
+        }
+        report.setStatus(status);
+        report.setDemo(true);
+        reportRepository.save(report);
     }
 
     private void zone(String name, ZoneType type, List<double[]> vertices, String resolution, String description) {

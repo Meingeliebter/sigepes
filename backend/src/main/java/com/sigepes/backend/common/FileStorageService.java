@@ -68,6 +68,24 @@ public class FileStorageService {
         }
     }
 
+    /**
+     * Guarda contenido ya validado y transformado por el llamador (p. ej. una foto sin EXIF). No
+     * conserva nombre original: solo el identificador generado por el servidor.
+     */
+    public StoredFile storeBytes(byte[] content, String contentType, String subdir, String id) {
+        try {
+            Path dir = root.resolve(subdir).normalize();
+            if (!dir.startsWith(root)) {
+                throw ApiException.of(ErrorCode.INTERNAL_ERROR, "Ruta de almacenamiento inválida.");
+            }
+            Files.createDirectories(dir);
+            Files.write(dir.resolve(id), content);
+            return new StoredFile(subdir + "/" + id, id, contentType, content.length);
+        } catch (IOException e) {
+            throw ApiException.of(ErrorCode.INTERNAL_ERROR, "No fue posible guardar el archivo.");
+        }
+    }
+
     public Resource load(String storagePath) {
         Path file = root.resolve(storagePath).normalize();
         if (!file.startsWith(root) || !Files.exists(file)) {

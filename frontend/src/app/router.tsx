@@ -21,11 +21,16 @@ import { VesselAuditPage } from '../modules/inspections/pages/VesselAuditPage';
 import { PermitVerificationPage } from '../modules/permits/pages/PermitVerificationPage';
 import { QuotasPage } from '../modules/quotas/pages/QuotasPage';
 import { ZonesPage } from '../modules/zones/pages/ZonesPage';
+import { PublicReportPage } from '../modules/reports/pages/PublicReportPage';
+import { NewReportPage } from '../modules/reports/pages/NewReportPage';
+import { ReportsQueuePage } from '../modules/reports/pages/ReportsQueuePage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  // RF-10: la denuncia ciudadana no exige cuenta.
+  { path: '/denunciar', element: <PublicReportPage /> },
   {
     element: <ProtectedRoute />,
     children: [
@@ -42,11 +47,13 @@ export const router = createBrowserRouter([
           { path: 'closures', element: <ClosuresPage /> },
           { path: 'quotas', element: <QuotasPage /> },
           { path: 'zones', element: <ZonesPage /> },
+          { path: 'reports/new', element: <NewReportPage /> },
           { path: 'permits', element: <PermitsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'access-denied', element: <AccessDeniedPage /> },
           { element: <RoleRoute allow={['ADMIN']} />, children: [{ path: 'users', element: <UsersPage /> }] },
           { element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />, children: [{ path: 'audit', element: <AuditPage /> }] },
+          { element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />, children: [{ path: 'reports', element: <ReportsQueuePage /> }] },
           {
             element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />,
             children: [

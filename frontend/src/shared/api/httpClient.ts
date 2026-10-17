@@ -13,6 +13,15 @@ httpClient.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * Cliente sin token, para endpoints públicos que no deben saber quién llama: la denuncia anónima
+ * (RN-20) se envía por aquí aunque haya sesión iniciada, de modo que el servidor nunca ve la cuenta.
+ */
+export const publicClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
+  timeout: Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS ?? 15000),
+});
+
 httpClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {

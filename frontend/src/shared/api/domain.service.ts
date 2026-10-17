@@ -1,4 +1,4 @@
-import { httpClient } from './httpClient';
+import { httpClient, publicClient } from './httpClient';
 import type { Role } from '../../modules/auth/types/auth.types';
 import { cacheSpecies, getCachedSpecies } from '../storage/speciesOfflineStore';
 import { cacheQuotas, getCachedQuotas } from '../storage/quotaOfflineStore';
@@ -126,6 +126,59 @@ export interface ZoneEvent {
   longitude: number;
   occurredAt: string;
   status: 'OPEN' | 'REVIEWED';
+}
+
+export type ReportType = 'CLOSURE_FISHING' | 'UNDERSIZED_CATCH' | 'PROHIBITED_GEAR' | 'MPA_INTRUSION' | 'OTHER';
+export type ReportStatus = 'RECEIVED' | 'INVESTIGATING' | 'CLOSED_FOUNDED' | 'CLOSED_UNFOUNDED';
+
+export interface ReportInput {
+  clientId: string;
+  reportType: ReportType;
+  description: string;
+  occurredOn: string;
+  latitude?: number;
+  longitude?: number;
+  locationText?: string;
+  anonymous: boolean;
+}
+
+export interface ReportReceipt {
+  trackingCode: string;
+  status: ReportStatus;
+  anonymous: boolean;
+  createdAt: string;
+}
+
+export interface ReportTracking {
+  trackingCode: string;
+  reportType: ReportType;
+  status: ReportStatus;
+  occurredOn: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReportSummary {
+  id: string;
+  trackingCode: string;
+  reportType: ReportType;
+  status: ReportStatus;
+  description: string;
+  occurredOn: string;
+  latitude?: number;
+  longitude?: number;
+  locationText?: string;
+  anonymous: boolean;
+  photoCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReportDetail extends Omit<ReportSummary, 'photoCount'> {
+  reporterName?: string;
+  resolutionNote?: string;
+  photoIds: string[];
+  history: { fromStatus: ReportStatus; toStatus: ReportStatus; note: string; changedBy: string; changedAt: string }[];
 }
 
 export interface PositionBatchResult {
@@ -452,6 +505,38 @@ export const domainService = {
   },
   async reviewZoneEvent(id: string): Promise<ZoneEvent> {
     return (await httpClient.patch<ZoneEvent>(`/eventos-zona/${id}/revisar`)).data;
+  },
+
+  // --- Denuncias (RF-10) ----------------------------------------------
+  /**
+   * AC-10.2: la denuncia anónima viaja por el cliente público, sin cabecera Authorization, para
+   * que el servidor no pueda asociarla a la cuenta aunque haya sesión iniciada.
+   */
+  async submitReport(payload: ReportInput, photos: Blob[]): Promise<ReportReceipt> {
+    const form = new FormData();
+    form.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    photos.forEach((photo, index) => form.append('photos', photo, `foto-${index + 1}`));
+    const client = payload.anonymous ? publicClient : httpClient;
+    return (await client.post<ReportReceipt>('/denuncias', form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+  },
+  async trackReport(code: string): Promise<ReportTracking> {
+    return (await publicClient.get<ReportTracking>(`/denuncias/seguimiento/${encodeURIComponent(code.trim())}`)).data;
+  },
+  async myReports(): Promise<ReportTracking[]> {
+    return (await httpClient.get<ReportTracking[]>('/denuncias/mias')).data;
+  },
+  async reports(status?: ReportStatus): Promise<ReportSummary[]> {
+    return (await httpClient.get<ReportSummary[]>('/denuncias', { params: status ? { estado: status } : undefined })).data;
+  },
+  async reportDetail(id: string): Promise<ReportDetail> {
+    return (await httpClient.get<ReportDetail>(`/denuncias/${id}`)).data;
+  },
+  async changeReportStatus(id: string, status: ReportStatus, note: string): Promise<ReportDetail> {
+    return (await httpClient.patch<ReportDetail>(`/denuncias/${id}/estado`, { status, note })).data;
+  },
+  /** Las fotos exigen token: se traen como blob y se muestran con una URL de objeto. */
+  async reportPhoto(id: string, photoId: string): Promise<Blob> {
+    return (await httpClient.get<Blob>(`/denuncias/${id}/fotos/${photoId}`, { responseType: 'blob' })).data;
   },
 
   // --- Permisos (RF-08) -----------------------------------------------

@@ -72,6 +72,13 @@ public enum ErrorCode {
     ZONE_NOT_FOUND(HttpStatus.NOT_FOUND, "La zona restringida no existe."),
     INVALID_ZONE_POLYGON(HttpStatus.BAD_REQUEST, "El polígono de la zona no es válido."),
 
+    // --- Denuncias (RF-10) --------------------------------------------
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "La denuncia no existe."),
+    INVALID_REPORT_TRANSITION(HttpStatus.UNPROCESSABLE_ENTITY,
+            "La denuncia no puede pasar a ese estado desde el estado actual."),
+    INVALID_REPORT_PHOTO(HttpStatus.BAD_REQUEST, "La foto adjunta no es válida."),
+    TOO_MANY_REPORT_PHOTOS(HttpStatus.BAD_REQUEST, "Una denuncia admite como máximo 3 fotos."),
+
     // --- Genéricos ----------------------------------------------------
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Hay errores de validación en la solicitud."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "La operación no está permitida sobre este recurso."),
