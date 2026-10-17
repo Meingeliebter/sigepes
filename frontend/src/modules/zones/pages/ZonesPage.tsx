@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
+import UndoIcon from '@mui/icons-material/Undo';
 import WrongLocationIcon from '@mui/icons-material/WrongLocation';
 import {
   Alert, Button, Card, CardContent, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
@@ -14,6 +15,7 @@ import { PageHeader } from '../../../shared/components/PageHeader';
 import { StatusChip } from '../../../shared/components/StatusChip';
 import { domainService, type RestrictedZone } from '../../../shared/api/domain.service';
 import { toAppError } from '../../../shared/errors/AppError';
+import { useInteractiveMap } from '../../../shared/hooks/useInteractiveMap';
 import { parseVertices, ZONE_TYPE_LABEL } from '../../../shared/geo/geo';
 import { useAuthStore } from '../../auth/store/authStore';
 import { isAuthority } from '../../auth/types/auth.types';
@@ -28,6 +30,7 @@ export function ZonesPage() {
   const user = useAuthStore((s) => s.user);
   const canManage = !!user && ZONE_MANAGERS.includes(user.role);
   const authority = isAuthority(user?.role);
+  const interactiveMap = useInteractiveMap();
 
   const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: domainService.zones });
   const eventsQuery = useQuery({ queryKey: ['zone-events'], queryFn: domainService.zoneEvents, enabled: authority });
@@ -232,8 +235,31 @@ export function ZonesPage() {
               </Stack>
             </Grid>
             <Grid size={{ xs: 12, md: 7 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Vista previa</Typography>
-              <GeoMap title="Vista previa de la zona" zones={preview ? [...zones, preview] : zones} highlightZoneId="preview" height={320} />
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Typography variant="subtitle2">Vista previa</Typography>
+                {interactiveMap && form.vertices.trim() !== '' && (
+                  <Button size="small" startIcon={<UndoIcon />} onClick={() => setForm({ ...form, vertices: form.vertices.trim().split('\n').slice(0, -1).join('\n') })}>
+                    Quitar último vértice
+                  </Button>
+                )}
+              </Stack>
+              {interactiveMap && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Haz clic en el mapa para añadir los vértices en orden; también puedes escribirlos a mano.
+                </Typography>
+              )}
+              <GeoMap
+                title="Vista previa de la zona"
+                zones={preview ? [...zones, preview] : zones}
+                // Mientras no hay polígono (menos de 3 vértices), los puntos marcados se ven como trazo.
+                track={!preview && vertices ? vertices.map(([latitude, longitude], index) => ({ id: `v${index}`, latitude, longitude })) : []}
+                highlightZoneId="preview"
+                height={360}
+                onPick={(lat, lon) => setForm((current) => ({
+                  ...current,
+                  vertices: `${current.vertices.trim()}${current.vertices.trim() ? '\n' : ''}${lat}, ${lon}`,
+                }))}
+              />
             </Grid>
           </Grid>
         </DialogContent>

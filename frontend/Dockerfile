@@ -9,6 +9,12 @@ COPY . .
 # La URL de la API se fija en tiempo de build; por defecto /api/v1, que nginx reenvía al backend.
 ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# Google Maps es opcional: sin clave la app usa el mapa esquemático. La clave de navegador de Maps
+# JavaScript queda visible en el bundle por diseño; se protege restringiéndola por dominio.
+ARG VITE_GOOGLE_MAPS_API_KEY=
+ARG VITE_GOOGLE_MAPS_MAP_ID=
+ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
+ENV VITE_GOOGLE_MAPS_MAP_ID=${VITE_GOOGLE_MAPS_MAP_ID}
 RUN npm run build
 
 # --- Etapa de ejecución ----------------------------------------------

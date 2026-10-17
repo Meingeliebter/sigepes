@@ -44,7 +44,7 @@ docker compose up --build       # PostgreSQL + API + frontend (nginx) → http:/
 |---|---|---|
 | Integración continua | GitHub Actions (`.github/workflows/ci.yml`) | En cada push/PR: `mvnw verify`, lint + build del frontend y build de ambas imágenes Docker. |
 | API + PostgreSQL | Render (`render.yaml`) | Blueprint con health check en `/actuator/health`, reinicio automático y disco persistente para archivos. |
-| Frontend | Vercel (`frontend/vercel.json`) o cualquier CDN | Build estático; define `VITE_API_BASE_URL=https://<api>/api/v1` en el panel. |
+| Frontend | Vercel (`frontend/vercel.json`) o cualquier CDN | Build estático; define `VITE_API_BASE_URL=https://<api>/api/v1` en el panel y, opcionalmente, `VITE_GOOGLE_MAPS_API_KEY` y `VITE_GOOGLE_MAPS_MAP_ID`. |
 | Despliegue continuo | `.github/workflows/deploy.yml` | Tras CI verde en `main`, dispara el deploy hook de Render y espera a que la API responda `UP`. |
 
 **Configuración única**
@@ -55,7 +55,7 @@ docker compose up --build       # PostgreSQL + API + frontend (nginx) → http:/
    (formato `jdbc:postgresql://host:5432/db`). `JWT_SECRET` se genera solo.
 3. Copia el *Deploy Hook* del servicio `sigepes-api` como secreto `RENDER_DEPLOY_HOOK_URL` del
    repositorio y la URL pública de la API como variable `API_URL`.
-4. En Vercel importa el repositorio con *Root Directory* `frontend` y define `VITE_API_BASE_URL`.
+4. En Vercel importa el repositorio con *Root Directory* `frontend` y define `VITE_API_BASE_URL`. Para el mapa de Google, crea en Google Cloud una clave de navegador de *Maps JavaScript API* restringida al dominio de Vercel y defínela en `VITE_GOOGLE_MAPS_API_KEY`; sin ella se usa el mapa esquemático.
 
 Ningún secreto vive en el repositorio: todo se lee de variables de entorno del almacén de la
 plataforma. HTTPS lo termina la plataforma (Render y Vercel redirigen HTTP→HTTPS); la API respeta
