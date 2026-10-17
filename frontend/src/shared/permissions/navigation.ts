@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Bitácora de faenas', path: '/app/trips', icon: 'book', roles: ALL, group: 'Operación' },
   { label: 'Permisos', path: '/app/permits', icon: 'gavel', roles: ALL, group: 'Operación' },
   { label: 'Trazabilidad', path: '/app/traceability', icon: 'qrcode', roles: ALL, group: 'Operación' },
+  { label: 'Documentos', path: '/app/documents', icon: 'folder', roles: ALL, group: 'Operación' },
   { label: 'Especies', path: '/app/species', icon: 'fish', roles: ALL, group: 'Recursos y control' },
   { label: 'Vedas', path: '/app/closures', icon: 'block', roles: ALL, group: 'Recursos y control' },
   { label: 'Cuotas', path: '/app/quotas', icon: 'quota', roles: ALL, group: 'Recursos y control' },

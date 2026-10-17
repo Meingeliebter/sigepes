@@ -1,6 +1,7 @@
 import BlockIcon from '@mui/icons-material/Block';
 import CloseIcon from '@mui/icons-material/Close';
 import InsightsIcon from '@mui/icons-material/Insights';
+import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import MarkEmailUnreadOutlinedIcon from '@mui/icons-material/MarkEmailUnreadOutlined';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -63,6 +64,7 @@ const ICONS: Record<string, ReactNode> = {
   zone: <WrongLocationIcon />,
   report: <CampaignOutlinedIcon />,
   insights: <InsightsIcon />,
+  folder: <FolderOpenOutlinedIcon />,
   inbox: <MarkEmailUnreadOutlinedIcon />,
 };
 

@@ -16,6 +16,8 @@ import com.sigepes.backend.closures.ClosureEntity;
 import com.sigepes.backend.closures.ClosureRepository;
 import com.sigepes.backend.closures.ClosureStatus;
 import com.sigepes.backend.common.AppClock;
+import com.sigepes.backend.documents.DocumentEntity;
+import com.sigepes.backend.documents.DocumentRepository;
 import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitService;
 import com.sigepes.backend.users.Role;
@@ -39,20 +41,22 @@ public class AlertSweeper {
     private final ClosureRepository closureRepository;
     private final PermitService permitService;
     private final AuditService auditService;
+    private final DocumentRepository documentRepository;
 
     public AlertSweeper(AlertService alerts, ClosureRepository closureRepository, PermitService permitService,
-            AuditService auditService) {
+            AuditService auditService, DocumentRepository documentRepository) {
         this.alerts = alerts;
         this.closureRepository = closureRepository;
         this.permitService = permitService;
         this.auditService = auditService;
+        this.documentRepository = documentRepository;
     }
 
     /** Devuelve cuántas alertas nuevas se generaron. */
     @Transactional
     public int sweep() {
         LocalDate today = AppClock.today();
-        return closures(today) + permits(today) + security();
+        return closures(today) + permits(today) + documents(today) + security();
     }
 
     private int closures(LocalDate today) {
@@ -94,6 +98,25 @@ public class AlertSweeper {
                     "Tu permiso vence en " + daysLeft + " día(s), el " + DAY.format(permit.getExpiresAt())
                             + ". Renuévalo para seguir pescando legalmente.",
                     "/app/permits", "permit:" + permit.getId() + ":" + tier);
+            created += fresh ? 1 : 0;
+        }
+        return created;
+    }
+
+    /** AC-15.3 · Documentos con vencimiento: aviso a 30, 15 y 5 días y al vencer, al titular. */
+    private int documents(LocalDate today) {
+        int created = 0;
+        for (DocumentEntity document : documentRepository.findByExpiresOnBetween(today.minusDays(30), today.plusDays(30))) {
+            long daysLeft = ChronoUnit.DAYS.between(today, document.getExpiresOn());
+            String tier = daysLeft < 0 ? "expired" : daysLeft <= 5 ? "5" : daysLeft <= 15 ? "15" : "30";
+            AlertSeverity severity = daysLeft <= 5 ? AlertSeverity.CRITICAL
+                    : daysLeft <= 15 ? AlertSeverity.WARNING : AlertSeverity.INFO;
+            String message = daysLeft < 0
+                    ? "«" + document.getTitle() + "» venció el " + DAY.format(document.getExpiresOn()) + ". Carga la versión vigente."
+                    : "«" + document.getTitle() + "» vence en " + daysLeft + " día(s), el " + DAY.format(document.getExpiresOn()) + ".";
+            boolean fresh = alerts.notify(document.getOwner().getId(), AlertType.DOCUMENT, severity,
+                    daysLeft < 0 ? "Documento vencido" : "Documento por vencer", message, "/app/documents",
+                    "document:" + document.getId() + ":v" + document.getCurrentVersion() + ":" + tier);
             created += fresh ? 1 : 0;
         }
         return created;

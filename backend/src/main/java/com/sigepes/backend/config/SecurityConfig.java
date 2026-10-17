@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/denuncias/seguimiento/*").permitAll()
                         // RF-09: cualquier comprador verifica el QR de un lote sin cuenta.
                         .requestMatchers(HttpMethod.GET, "/api/v1/trazabilidad/*").permitAll()
+                        // RF-15: la descarga se autoriza con el enlace firmado de corta duración, no con el JWT.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/documentos/descarga/*").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll())
                 .exceptionHandling(handling -> handling

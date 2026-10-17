@@ -43,6 +43,7 @@ public class AuditService {
     public static final String MODULE_GEO = "geolocalizacion";
     public static final String MODULE_REPORTS = "denuncias";
     public static final String MODULE_TRACEABILITY = "trazabilidad";
+    public static final String MODULE_DOCUMENTS = "documentos";
 
     private static final int MAX_DETAIL = 600;
     private static final int MAX_STATE = 2000;
@@ -89,6 +90,16 @@ public class AuditService {
             String module, String entity, String entityId, String detail, String beforeState, String afterState) {
         save(actorId, actorLabel, actionType, action, module, entity, entityId, detail, beforeState, afterState,
                 clientIp());
+    }
+
+    /**
+     * Registra un evento en una transacción propia: queda guardado aunque la operación que lo
+     * provocó se revierta (p. ej. un archivo rechazado, AC-15.5).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordIsolated(String actorId, String actorLabel, AuditActionType actionType, String action,
+            String module, String entity, String entityId, String detail) {
+        save(actorId, actorLabel, actionType, action, module, entity, entityId, detail, null, null, clientIp());
     }
 
     /**

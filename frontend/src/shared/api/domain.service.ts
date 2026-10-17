@@ -308,6 +308,36 @@ export interface DashboardSummary {
   compliance: ComplianceRow[];
 }
 
+export type DocType = 'ID_DOCUMENT' | 'VESSEL_CERTIFICATE' | 'PERMIT' | 'RESOLUTION' | 'OTHER';
+export type DocEntityType = 'USER' | 'VESSEL' | 'PERMIT' | 'CLOSURE';
+export type DocExpiryStatus = 'VALID' | 'EXPIRING' | 'EXPIRED' | 'NO_EXPIRY';
+
+export interface DocumentVersion {
+  version: number;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  expiresOn?: string;
+  note?: string;
+  uploadedAt: string;
+}
+
+export interface DocumentRecord {
+  id: string;
+  docType: DocType;
+  title: string;
+  entityType: DocEntityType;
+  entityId: string;
+  entityLabel: string;
+  ownerName: string;
+  currentVersion: number;
+  expiresOn?: string;
+  expiryStatus: DocExpiryStatus;
+  updatedAt: string;
+  versions: DocumentVersion[];
+}
+
 export type Region = 'PACIFICO' | 'CARIBE' | 'OTRA';
 
 export interface IndicatorFilters {
@@ -415,7 +445,7 @@ export interface PublicLot {
   chain: ChainEvent[];
 }
 
-export type AlertType = 'CLOSURE' | 'QUOTA' | 'PERMIT' | 'ZONE' | 'REPORT' | 'SECURITY';
+export type AlertType = 'CLOSURE' | 'QUOTA' | 'PERMIT' | 'ZONE' | 'REPORT' | 'SECURITY' | 'DOCUMENT';
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 
 export interface AppAlert {
@@ -764,6 +794,37 @@ export const domainService = {
   async summary(): Promise<DashboardSummary> {
     return (await httpClient.get<DashboardSummary>('/resumen')).data;
   },
+  // --- Documentos (RF-15) ----------------------------------------------
+  async documents(filters: { tipo?: DocType | ''; entidad?: DocEntityType | ''; estado?: DocExpiryStatus | '' } = {}): Promise<DocumentRecord[]> {
+    const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+    return (await httpClient.get<DocumentRecord[]>('/documentos', { params })).data;
+  },
+  async document(id: string): Promise<DocumentRecord> {
+    return (await httpClient.get<DocumentRecord>(`/documentos/${id}`)).data;
+  },
+  async uploadDocument(
+    payload: { docType: DocType; title: string; entityType: DocEntityType; entityId: string; expiresOn?: string; note?: string },
+    file: File,
+  ): Promise<DocumentRecord> {
+    const form = new FormData();
+    form.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    form.append('file', file);
+    return (await httpClient.post<DocumentRecord>('/documentos', form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+  },
+  /** RN-30: agrega una versión; las anteriores se conservan. */
+  async uploadDocumentVersion(id: string, payload: { expiresOn?: string; note?: string }, file: File): Promise<DocumentRecord> {
+    const form = new FormData();
+    form.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    form.append('file', file);
+    return (await httpClient.post<DocumentRecord>(`/documentos/${id}/versiones`, form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+  },
+  /** AC-15.5: pide un enlace firmado de 5 minutos y devuelve la URL absoluta para abrirlo. */
+  async documentDownloadUrl(id: string, version: number): Promise<string> {
+    const { url } = (await httpClient.post<{ url: string; expiresAt: string }>(`/documentos/${id}/versiones/${version}/enlace`)).data;
+    const base = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/api\/v1\/?$/, '');
+    return `${base}${url}`;
+  },
+
   // --- Indicadores (RF-12) ---------------------------------------------
   async indicators(filters: IndicatorFilters): Promise<IndicatorsResponse> {
     return (await httpClient.get<IndicatorsResponse>('/indicadores', { params: indicatorParams(filters) })).data;

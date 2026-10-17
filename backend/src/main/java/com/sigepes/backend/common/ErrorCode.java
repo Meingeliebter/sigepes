@@ -84,6 +84,12 @@ public enum ErrorCode {
     LOT_NOT_LEGAL(HttpStatus.UNPROCESSABLE_ENTITY, "La captura no cumple las condiciones de origen legal."),
     LOT_WEIGHT_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "El peso supera los kilos disponibles de la captura."),
 
+    // --- Documentos (RF-15) -------------------------------------------
+    DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "El documento no existe."),
+    INVALID_DOCUMENT_FILE(HttpStatus.BAD_REQUEST,
+            "El archivo debe ser un PDF, JPG o PNG real (se revisa su contenido, no la extensión)."),
+    DOCUMENT_LINK_EXPIRED(HttpStatus.GONE, "El enlace de descarga caducó o no es válido. Genera uno nuevo."),
+
     // --- Alertas (RF-11) ----------------------------------------------
     ALERT_NOT_FOUND(HttpStatus.NOT_FOUND, "La alerta no existe."),
     ALERT_CRITICAL_PERSISTENT(HttpStatus.UNPROCESSABLE_ENTITY,

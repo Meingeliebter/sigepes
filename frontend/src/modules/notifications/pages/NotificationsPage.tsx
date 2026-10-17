@@ -2,6 +2,7 @@ import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
 import BlockIcon from '@mui/icons-material/Block';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DonutLargeIcon from '@mui/icons-material/DonutLarge';
 import GavelIcon from '@mui/icons-material/Gavel';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -29,6 +30,7 @@ const ICON_BY_TYPE: Record<AlertType, ReactNode> = {
   ZONE: <WrongLocationIcon />,
   REPORT: <CampaignOutlinedIcon />,
   SECURITY: <ShieldOutlinedIcon />,
+  DOCUMENT: <DescriptionOutlinedIcon />,
 };
 
 const AVATAR_COLOR = { INFO: 'info.main', WARNING: 'warning.main', CRITICAL: 'error.main' } as const;
