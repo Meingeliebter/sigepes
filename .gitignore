@@ -15,3 +15,7 @@ Thumbs.db
 
 # Secretos del stack docker compose (ver .env.example)
 .env
+
+# Archivos subidos en ejecución local (adjuntos, fotos de denuncias)
+backend/uploads/
+uploads/

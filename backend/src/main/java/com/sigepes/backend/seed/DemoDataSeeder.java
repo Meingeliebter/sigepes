@@ -38,6 +38,7 @@ import com.sigepes.backend.users.UserService;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselRepository;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /**
  * Datos de demostración del MVP.
@@ -136,7 +137,7 @@ public class DemoDataSeeder implements ApplicationRunner {
                 MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
 
         // --- Vedas: una vigente hoy (total) y otra programada (parcial) --
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         closure(shrimp, "Pacífico Norte", today.minusDays(10), today.plusDays(45),
                 "Periodo reproductivo del camarón blanco.", inspector, "AUNAP-0456-2025", ClosureType.TOTAL);
         closure(snapper, "Caribe", today.plusMonths(3), today.plusMonths(4).plusDays(15),
@@ -216,7 +217,7 @@ public class DemoDataSeeder implements ApplicationRunner {
             UserEntity createdBy, String resolutionNumber, ClosureType closureType) {
         ClosureEntity closure = new ClosureEntity(prefixedId("ved", species.getCommonName() + zone), species, zone,
                 from, to, ClosureStatus.SCHEDULED, resolutionNumber, closureType);
-        closure.setStatus(closure.effectiveStatus(LocalDate.now()));
+        closure.setStatus(closure.effectiveStatus(AppClock.today()));
         closure.setReason(reason);
         closure.setNotes("Registro DEMO de veda.");
         closure.setCreatedBy(createdBy);

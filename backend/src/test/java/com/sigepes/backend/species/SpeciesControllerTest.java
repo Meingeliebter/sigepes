@@ -21,6 +21,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** RF-06 · Catálogo de especies: atributos obligatorios y versionado (AC-06.2 / AC-06.4). */
 class SpeciesControllerTest extends ApiTestSupport {
@@ -98,8 +99,8 @@ class SpeciesControllerTest extends ApiTestSupport {
         String fisherToken = bearerFor("pescador.especies@sigepes.gov.co");
         FishingGearEntity gear = givenGear("Línea especies test", false);
         VesselEntity vessel = givenVessel(fisher, "DIMAR-ESP-1", VesselStatus.ACTIVE, gear);
-        givenPermit(fisher, "PES-ESP-1", PermitStatus.APPROVED, LocalDate.now().minusDays(1),
-                LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-ESP-1", PermitStatus.APPROVED, AppClock.today().minusDays(1),
+                AppClock.today().plusYears(1));
         SpeciesEntity snapper = givenSpecies("Pargo especies test", new BigDecimal("35.00"));
 
         String tripId = extract(mockMvc.perform(post("/api/v1/faenas").header("Authorization", fisherToken)
