@@ -9,7 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sigepes.backend.closures.ClosureEntity;
@@ -123,6 +127,42 @@ public abstract class ApiTestSupport {
                 ClosureStatus.SCHEDULED, "AUNAP-TEST-0001", closureType);
         closure.setStatus(closure.effectiveStatus(AppClock.today()));
         return closureRepository.save(closure);
+    }
+
+    // ------------------------------------------------------------------
+    // Bitácora vía API (la reutilizan las pruebas de cuotas, geolocalización y trazabilidad)
+    // ------------------------------------------------------------------
+
+    protected ResultActions apiStartTrip(String token, String vesselId, String zone) throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/faenas").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"vesselId":"%s","zone":"%s","originPort":"Bahía Solano"}""".formatted(vesselId, zone)));
+    }
+
+    protected String apiStartedTripId(String token, String vesselId, String zone) throws Exception {
+        String response = apiStartTrip(token, vesselId, zone)
+                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return extract(response, "id");
+    }
+
+    protected ResultActions apiAddCatch(String token, String tripId, String speciesId, String size, String weight)
+            throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/faenas/" + tripId + "/capturas")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"speciesId":"%s","quantity":5,"weightKg":%s,"averageSizeCm":%s}"""
+                        .formatted(speciesId, weight, size)));
+    }
+
+    protected ResultActions apiCloseTrip(String token, String tripId) throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/faenas/" + tripId + "/cerrar")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"nullDeclaration":false,"landingLatitude":6.23,"landingLongitude":-77.4}"""));
     }
 
     /** Inicia sesión con el endpoint real y devuelve la cabecera Authorization. */

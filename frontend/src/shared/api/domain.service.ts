@@ -1,6 +1,7 @@
 import { httpClient } from './httpClient';
 import type { Role } from '../../modules/auth/types/auth.types';
 import { cacheSpecies, getCachedSpecies } from '../storage/speciesOfflineStore';
+import { cacheQuotas, getCachedQuotas } from '../storage/quotaOfflineStore';
 
 export interface Vessel {
   id: string;
@@ -64,6 +65,25 @@ export interface Closure {
   reason?: string | null;
   resolutionNumber: string;
   closureType: string;
+  notes?: string | null;
+}
+
+/** RF-07: cuota de captura con su saldo. */
+export interface Quota {
+  id: string;
+  speciesId: string;
+  species: string;
+  zone: string;
+  from: string;
+  to: string;
+  totalKg: number;
+  consumedKg: number;
+  remainingKg: number;
+  consumedPercent: number;
+  status: 'ACTIVE' | 'CLOSED';
+  vesselId?: string | null;
+  vessel?: string | null;
+  resolutionNumber?: string | null;
   notes?: string | null;
 }
 
@@ -310,6 +330,38 @@ export const domainService = {
     }>,
   ): Promise<Closure> {
     return (await httpClient.patch<Closure>(`/vedas/${id}`, payload)).data;
+  },
+
+  // --- Cuotas (RF-07) -------------------------------------------------
+  /** AC-07.6: cachea las cuotas para validar capturas sin conexión con el último saldo conocido. */
+  async quotas(): Promise<Quota[]> {
+    try {
+      const data = (await httpClient.get<Quota[]>('/cuotas')).data;
+      cacheQuotas(data);
+      return data;
+    } catch (error) {
+      const cached = getCachedQuotas();
+      if (cached) return cached;
+      throw error;
+    }
+  },
+  async createQuota(payload: {
+    speciesId: string;
+    zone: string;
+    from: string;
+    to: string;
+    totalKg: number;
+    vesselId?: string;
+    resolutionNumber?: string;
+    notes?: string;
+  }): Promise<Quota> {
+    return (await httpClient.post<Quota>('/cuotas', payload)).data;
+  },
+  async updateQuota(
+    id: string,
+    payload: Partial<{ totalKg: number; to: string; status: 'ACTIVE' | 'CLOSED'; notes: string }>,
+  ): Promise<Quota> {
+    return (await httpClient.patch<Quota>(`/cuotas/${id}`, payload)).data;
   },
 
   // --- Permisos (RF-08) -----------------------------------------------

@@ -48,6 +48,10 @@ public class CatchEntity {
     @Column(name = "min_size_cm_at_capture", precision = 6, scale = 2, nullable = false)
     private BigDecimal minSizeCmAtCapture;
 
+    /** AC-07.2: cuota contra la que se descontó esta captura al cerrar la faena (null si no aplica). */
+    @Column(name = "quota_id", length = 40)
+    private String quotaId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -99,6 +103,14 @@ public class CatchEntity {
 
     public BigDecimal getMinSizeCmAtCapture() {
         return minSizeCmAtCapture;
+    }
+
+    public String getQuotaId() {
+        return quotaId;
+    }
+
+    public void setQuotaId(String quotaId) {
+        this.quotaId = quotaId;
     }
 
     public Instant getCreatedAt() {

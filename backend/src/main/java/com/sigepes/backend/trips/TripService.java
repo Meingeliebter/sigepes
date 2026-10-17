@@ -1,5 +1,6 @@
 package com.sigepes.backend.trips;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import com.sigepes.backend.common.Ids;
 import com.sigepes.backend.gears.FishingGearEntity;
 import com.sigepes.backend.gears.GearService;
 import com.sigepes.backend.permits.PermitEntity;
+import com.sigepes.backend.quotas.QuotaService;
 import com.sigepes.backend.rules.ComplianceService;
 import com.sigepes.backend.security.AuthenticatedUser;
 import com.sigepes.backend.security.CurrentUser;
@@ -46,10 +48,11 @@ public class TripService {
     private final ComplianceService compliance;
     private final CurrentUser currentUser;
     private final AuditService auditService;
+    private final QuotaService quotaService;
 
     public TripService(FishingTripRepository repository, VesselService vesselService, SpeciesService speciesService,
             GearService gearService, UserService userService, ComplianceService compliance, CurrentUser currentUser,
-            AuditService auditService) {
+            AuditService auditService, QuotaService quotaService) {
         this.repository = repository;
         this.vesselService = vesselService;
         this.speciesService = speciesService;
@@ -58,6 +61,7 @@ public class TripService {
         this.compliance = compliance;
         this.currentUser = currentUser;
         this.auditService = auditService;
+        this.quotaService = quotaService;
     }
 
     /**
@@ -152,6 +156,13 @@ public class TripService {
         compliance.requireActiveSpecies(species);
         compliance.requireNoClosure(species, trip.getTripDate(), trip.getZone(), trip.getPermit());
         compliance.requireMinimumSize(species, request.averageSizeCm());
+        // RN-14 / AC-07.3: aviso temprano si la captura no cabe en la cuota disponible.
+        BigDecimal pendingInTrip = trip.getCatches().stream()
+                .filter(existing -> existing.getSpecies().getId().equals(species.getId()))
+                .map(CatchEntity::getWeightKg)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        quotaService.requireCapacity(species, trip.getZone(), trip.getTripDate(), trip.getVessel().getId(),
+                pendingInTrip, request.weightKg());
 
         CatchEntity entry = new CatchEntity(Ids.orGenerate(request.id(), "cap"), species, request.quantity(),
                 request.weightKg(), request.averageSizeCm(), species.getMinSizeCm());
@@ -179,6 +190,15 @@ public class TripService {
         if (request.landingLatitude() == null || request.landingLongitude() == null) {
             throw ApiException.of(ErrorCode.VALIDATION_ERROR,
                     "La ubicación GPS de desembarco es obligatoria para cerrar la faena.");
+        }
+
+        // AC-07.2: descuento definitivo de cada captura contra su cuota (con bloqueo de la fila). Si
+        // alguna ya no cabe, el cierre completo se revierte y la faena sigue abierta.
+        for (CatchEntity entry : trip.getCatches()) {
+            if (entry.getQuotaId() == null) {
+                entry.setQuotaId(quotaService.consume(entry.getSpecies().getId(), trip.getZone(),
+                        trip.getTripDate(), trip.getVessel().getId(), trip.getOwner().getId(), entry.getWeightKg()));
+            }
         }
 
         trip.setNullDeclaration(nullDeclaration);

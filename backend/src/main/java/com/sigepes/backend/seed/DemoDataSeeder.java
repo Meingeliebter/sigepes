@@ -24,6 +24,8 @@ import com.sigepes.backend.gears.GearStatus;
 import com.sigepes.backend.permits.PermitEntity;
 import com.sigepes.backend.permits.PermitRepository;
 import com.sigepes.backend.permits.PermitStatus;
+import com.sigepes.backend.quotas.QuotaEntity;
+import com.sigepes.backend.quotas.QuotaRepository;
 import com.sigepes.backend.species.MeasurementMethod;
 import com.sigepes.backend.species.SpeciesEntity;
 import com.sigepes.backend.species.SpeciesRegion;
@@ -61,12 +63,13 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final SpeciesRepository speciesRepository;
     private final ClosureRepository closureRepository;
     private final PermitRepository permitRepository;
+    private final QuotaRepository quotaRepository;
 
     public DemoDataSeeder(
             @org.springframework.beans.factory.annotation.Value("${sigepes.seed.enabled:true}") boolean enabled,
             UserRepository userRepository, UserService userService, FishingGearRepository gearRepository,
             VesselRepository vesselRepository, SpeciesRepository speciesRepository,
-            ClosureRepository closureRepository, PermitRepository permitRepository) {
+            ClosureRepository closureRepository, PermitRepository permitRepository, QuotaRepository quotaRepository) {
         this.enabled = enabled;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -75,6 +78,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.speciesRepository = speciesRepository;
         this.closureRepository = closureRepository;
         this.permitRepository = permitRepository;
+        this.quotaRepository = quotaRepository;
     }
 
     @Override
@@ -125,9 +129,9 @@ public class DemoDataSeeder implements ApplicationRunner {
                 MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.CARIBE);
         SpeciesEntity shrimp = species("Camarón blanco", "Litopenaeus vannamei", new BigDecimal("12.00"),
                 MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
-        species("Atún aleta amarilla", "Thunnus albacares", new BigDecimal("50.00"),
+        SpeciesEntity tuna = species("Atún aleta amarilla", "Thunnus albacares", new BigDecimal("50.00"),
                 MeasurementMethod.FORK_LENGTH, SpeciesRegion.AMBAS);
-        species("Sierra", "Scomberomorus sierra", new BigDecimal("40.00"),
+        SpeciesEntity sierra = species("Sierra", "Scomberomorus sierra", new BigDecimal("40.00"),
                 MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
         species("Corvina", "Cynoscion phoxocephalus", new BigDecimal("30.00"),
                 MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.PACIFICO);
@@ -139,6 +143,15 @@ public class DemoDataSeeder implements ApplicationRunner {
         closure(snapper, "Caribe", today.plusMonths(3), today.plusMonths(4).plusDays(15),
                 "Veda preventiva programada para el pargo rojo; se exceptúa la pesca de subsistencia.", inspector,
                 "AUNAP-0512-2025", ClosureType.PARTIAL);
+
+        // --- Cuotas (RF-07): una holgada, una cerca del límite y una por embarcación
+        quota(snapper, "Caribe", today.withDayOfYear(1), today.withDayOfYear(today.lengthOfYear()),
+                new BigDecimal("2000.00"), BigDecimal.ZERO, null, "AUNAP-0610-2025");
+        quota(tuna, "TODAS", today.withDayOfYear(1), today.withDayOfYear(today.lengthOfYear()),
+                new BigDecimal("5000.00"), new BigDecimal("4120.00"), null, "AUNAP-0611-2025");
+        quota(sierra, "Pacífico Norte", today.withDayOfMonth(1), today.withDayOfMonth(1).plusMonths(3).minusDays(1),
+                new BigDecimal("800.00"), new BigDecimal("150.00"),
+                vesselRepository.findById(prefixedId("emb", "DIMAR-CO-20044")).orElse(null), "AUNAP-0612-2025");
 
         // --- Permisos: vigente, vencido y pendiente ----------------------
         permit("PES-0231", "Pesca artesanal", fisher, today.minusMonths(6), today.plusMonths(6),
@@ -152,6 +165,18 @@ public class DemoDataSeeder implements ApplicationRunner {
                 PermitStatus.SUSPENDED, "Incumplimiento reiterado del reporte de desembarco.");
 
         log.info("Datos DEMO cargados. Usuarios de prueba con contraseña «{}».", DEMO_PASSWORD);
+    }
+
+    private void quota(SpeciesEntity species, String zone, LocalDate from, LocalDate to, BigDecimal totalKg,
+            BigDecimal consumedKg, VesselEntity vessel, String resolution) {
+        QuotaEntity quota = new QuotaEntity(prefixedId("cuo", species.getCommonName() + zone), species, zone, from, to,
+                totalKg);
+        quota.consume(consumedKg);
+        quota.setVessel(vessel);
+        quota.setResolutionNumber(resolution);
+        quota.setLastThreshold(quota.consumedPercent().compareTo(new BigDecimal("80")) >= 0 ? 80 : 0);
+        quota.setDemo(true);
+        quotaRepository.save(quota);
     }
 
     private UserEntity demoUser(String nationalId, String fullName, String email, Role role) {

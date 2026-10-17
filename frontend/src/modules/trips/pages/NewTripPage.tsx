@@ -11,6 +11,7 @@ import { toAppError } from '@/shared/errors/AppError';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import { useAuthStore } from '../../auth/store/authStore';
 import { savePendingTrip } from '@/shared/storage/tripOfflineStore';
+import { findApplicableQuota } from '@/shared/storage/quotaOfflineStore';
 
 /** Bloque del formulario con su título; agrupa los campos como los apartados de la bitácora en papel. */
 function FormSection({ title, children }: { title: string; children: ReactNode }) {
@@ -31,6 +32,8 @@ export function NewTripPage() {
   const vesselsQuery = useQuery({ queryKey: ['vessels'], queryFn: domainService.vessels });
   const speciesQuery = useQuery({ queryKey: ['species'], queryFn: domainService.species });
   const closuresQuery = useQuery({ queryKey: ['closures', 'active'], queryFn: domainService.activeClosures });
+  // AC-07.6: la lista de cuotas se cachea en el dispositivo; sin señal se valida con el último saldo.
+  const quotasQuery = useQuery({ queryKey: ['quotas'], queryFn: domainService.quotas });
   const [vesselId, setVesselId] = useState('');
   const [originPort, setOriginPort] = useState('');
   const [zone, setZone] = useState('Pacífico Norte');
@@ -59,6 +62,9 @@ export function NewTripPage() {
   const blockedByClosure = activeClosure?.closureType === 'TOTAL';
   const blockedBySize =
     selectedSpecies !== undefined && Number(averageSizeCm) > 0 && Number(averageSizeCm) < selectedSpecies.minSizeCm;
+  // RN-14 / AC-07.3: la captura no puede superar el saldo de la cuota que le aplica.
+  const quota = findApplicableQuota(quotasQuery.data, speciesId, zone, vesselId);
+  const blockedByQuota = quota !== undefined && Number(weightKg) > 0 && Number(weightKg) > quota.remainingKg;
   const hasLandingLocation = landingLatitude !== '' && landingLongitude !== '';
 
   function selectVessel(id: string) {
@@ -166,7 +172,7 @@ export function NewTripPage() {
     !vesselId ||
     !originPort ||
     !hasLandingLocation ||
-    (!nullDeclaration && (!speciesId || !quantity || !weightKg || !averageSizeCm || Boolean(blockedByClosure || blockedBySize)));
+    (!nullDeclaration && (!speciesId || !quantity || !weightKg || !averageSizeCm || Boolean(blockedByClosure || blockedBySize || blockedByQuota)));
 
   return (
     <PageContainer title="Nueva faena" subtitle="Registro con validación de permiso, veda y talla mínima" maxWidth={880}>
@@ -218,9 +224,24 @@ export function NewTripPage() {
               </Typography>
             </Alert>
           )}
+          {blockedByQuota && quota && (
+            <Alert severity="error">
+              <AlertTitle sx={{ fontWeight: 700 }}>Cuota agotada</AlertTitle>
+              La cuota de <strong>{quota.species}</strong> en {quota.zone === 'TODAS' ? 'todas las zonas' : quota.zone} tiene{' '}
+              {quota.remainingKg.toLocaleString('es-CO')} kg disponibles de {quota.totalKg.toLocaleString('es-CO')} kg.
+              {!online && ' Validado con el último saldo guardado en el dispositivo.'}
+            </Alert>
+          )}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Conteo individual" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
-            <TextField label="Peso (kg)" type="number" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} />
+            <TextField
+              label="Peso (kg)"
+              type="number"
+              value={weightKg}
+              onChange={(event) => setWeightKg(event.target.value)}
+              error={blockedByQuota}
+              helperText={quota ? `Saldo de cuota: ${quota.remainingKg.toLocaleString('es-CO')} kg` : ' '}
+            />
             <TextField
               label="Talla promedio (cm)"
               type="number"
