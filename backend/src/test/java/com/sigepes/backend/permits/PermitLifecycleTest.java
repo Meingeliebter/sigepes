@@ -17,6 +17,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.sigepes.backend.support.ApiTestSupport;
 import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
+import com.sigepes.backend.common.AppClock;
 
 /** RF-08 · Ciclo de vida del permiso: solicitud, aprobación, rechazo y suspensión. */
 class PermitLifecycleTest extends ApiTestSupport {
@@ -109,8 +110,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("El inspector aprueba un permiso pendiente")
     void inspectorApproves() throws Exception {
-        String id = givenPermit(fisher, "PES-LC-1", PermitStatus.PENDING, LocalDate.now(),
-                LocalDate.now().plusYears(1)).getId();
+        String id = givenPermit(fisher, "PES-LC-1", PermitStatus.PENDING, AppClock.today(),
+                AppClock.today().plusYears(1)).getId();
 
         mockMvc.perform(patch("/api/v1/permisos/" + id + "/evaluar").header("Authorization", inspectorToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -123,8 +124,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("El rechazo exige motivo")
     void rejectionRequiresReason() throws Exception {
-        String id = givenPermit(fisher, "PES-LC-2", PermitStatus.PENDING, LocalDate.now(),
-                LocalDate.now().plusYears(1)).getId();
+        String id = givenPermit(fisher, "PES-LC-2", PermitStatus.PENDING, AppClock.today(),
+                AppClock.today().plusYears(1)).getId();
 
         mockMvc.perform(patch("/api/v1/permisos/" + id + "/evaluar").header("Authorization", inspectorToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -145,8 +146,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("La suspensión exige motivo y queda registrada")
     void suspensionRequiresReason() throws Exception {
-        String id = givenPermit(fisher, "PES-LC-3", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusYears(1)).getId();
+        String id = givenPermit(fisher, "PES-LC-3", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusYears(1)).getId();
 
         mockMvc.perform(patch("/api/v1/permisos/" + id + "/evaluar").header("Authorization", inspectorToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -159,8 +160,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("Un pescador no puede evaluar permisos")
     void fisherCannotEvaluate() throws Exception {
-        String id = givenPermit(fisher, "PES-LC-4", PermitStatus.PENDING, LocalDate.now(),
-                LocalDate.now().plusYears(1)).getId();
+        String id = givenPermit(fisher, "PES-LC-4", PermitStatus.PENDING, AppClock.today(),
+                AppClock.today().plusYears(1)).getId();
 
         mockMvc.perform(patch("/api/v1/permisos/" + id + "/evaluar").header("Authorization", fisherToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -173,8 +174,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("Un permiso aprobado pero pasado de fecha se informa como vencido")
     void reportsExpired() throws Exception {
-        givenPermit(fisher, "PES-LC-5", PermitStatus.APPROVED, LocalDate.now().minusYears(2),
-                LocalDate.now().minusDays(1));
+        givenPermit(fisher, "PES-LC-5", PermitStatus.APPROVED, AppClock.today().minusYears(2),
+                AppClock.today().minusDays(1));
 
         mockMvc.perform(get("/api/v1/permisos").header("Authorization", fisherToken))
                 .andExpect(status().isOk())
@@ -184,8 +185,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("Marca los permisos próximos a vencer")
     void flagsExpiringSoon() throws Exception {
-        givenPermit(fisher, "PES-LC-6", PermitStatus.APPROVED, LocalDate.now().minusMonths(6),
-                LocalDate.now().plusDays(10));
+        givenPermit(fisher, "PES-LC-6", PermitStatus.APPROVED, AppClock.today().minusMonths(6),
+                AppClock.today().plusDays(10));
 
         mockMvc.perform(get("/api/v1/permisos").header("Authorization", fisherToken))
                 .andExpect(status().isOk())
@@ -196,8 +197,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("Verifica la constancia por número de permiso")
     void validatesByNumber() throws Exception {
-        givenPermit(fisher, "PES-LC-7", PermitStatus.APPROVED, LocalDate.now().minusDays(1),
-                LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-LC-7", PermitStatus.APPROVED, AppClock.today().minusDays(1),
+                AppClock.today().plusYears(1));
 
         mockMvc.perform(get("/api/v1/permisos/validar/PES-LC-7").header("Authorization", fisherToken))
                 .andExpect(status().isOk())
@@ -208,8 +209,8 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("AC-08.2: clasifica la urgencia de la alerta según los días restantes")
     void classifiesExpiryAlertSeverity() throws Exception {
-        String permitId = givenPermit(fisher, "PES-LC-10", PermitStatus.APPROVED, LocalDate.now().minusMonths(6),
-                LocalDate.now().plusDays(3)).getId();
+        String permitId = givenPermit(fisher, "PES-LC-10", PermitStatus.APPROVED, AppClock.today().minusMonths(6),
+                AppClock.today().plusDays(3)).getId();
 
         mockMvc.perform(get("/api/v1/notificaciones").header("Authorization", fisherToken))
                 .andExpect(status().isOk())
@@ -219,9 +220,9 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("Un pescador solo ve sus propios permisos")
     void listsOnlyOwnPermits() throws Exception {
-        givenPermit(fisher, "PES-LC-8", PermitStatus.APPROVED, LocalDate.now(), LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-LC-8", PermitStatus.APPROVED, AppClock.today(), AppClock.today().plusYears(1));
         UserEntity other = givenUser("9090909090", "otro.titular@sigepes.gov.co", Role.FISHER);
-        givenPermit(other, "PES-LC-9", PermitStatus.APPROVED, LocalDate.now(), LocalDate.now().plusYears(1));
+        givenPermit(other, "PES-LC-9", PermitStatus.APPROVED, AppClock.today(), AppClock.today().plusYears(1));
 
         mockMvc.perform(get("/api/v1/permisos").header("Authorization", fisherToken))
                 .andExpect(status().isOk())
