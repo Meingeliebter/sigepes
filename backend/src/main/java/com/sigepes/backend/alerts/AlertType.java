@@ -8,5 +8,6 @@ public enum AlertType {
     ZONE,
     REPORT,
     SECURITY,
-    DOCUMENT
+    DOCUMENT,
+    EXPORT
 }

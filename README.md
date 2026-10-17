@@ -71,14 +71,39 @@ plataforma. HTTPS lo termina la plataforma (Render y Vercel redirigen HTTP→HTT
 
 ## Alcance
 
-**Implementado (MVP v1.0):** RF-01 autenticación · RF-02 embarcaciones y artes · RF-03 bitácora de
+**MVP v1.0 (Sprint 1):** RF-01 autenticación · RF-02 embarcaciones y artes · RF-03 bitácora de
 faenas y capturas · RF-05 vedas · RF-06 especies y tallas mínimas · RF-08 permisos y licencias ·
 RF-20 administración y auditoría.
 
-**Fuera de alcance por ahora:** cuotas (RF-07), geolocalización (RF-04), trazabilidad (RF-09),
-denuncias (RF-10), alertas (RF-11), tablero (RF-12), AMP (RF-13), datos ambientales (RF-14),
-documentos (RF-15), marketplace (RF-16), RMS (RF-17), reportes (RF-18) y educación (RF-19).
-Corresponden a v1.1 y 2.0; el modelo de datos ya está preparado para acogerlos.
+**MVP v1.1 (Sprint 2):**
+
+| HU | Requisito | Qué hace |
+| --- | --- | --- |
+| HU-21 | Despliegue | CI en GitHub Actions, contenedores Docker, Render + Vercel con health checks y rollback |
+| HU-07 | RF-07 Cuotas | Cuotas por especie, zona y periodo con descuento al cierre y umbrales 80/95/100 % |
+| HU-04 | RF-04 Geolocalización | GPS de la faena, zonas restringidas (vedas y AMP) y evento de control al ingresar; mapa de Google Maps con respaldo sin conexión |
+| HU-10 | RF-10 Denuncias | Denuncia ciudadana anónima sin cuenta, fotos sin EXIF, código de seguimiento y bandeja de inspección |
+| HU-11 | RF-11 Alertas | Buzón persistente, alertas por evento y por calendario, entrega en vivo (SSE) y críticas no archivables |
+| HU-09 | RF-09 Trazabilidad | Lotes con QR desde captura legal y cadena de custodia encadenada por hash, verificable en `/verificar` |
+| HU-12 | RF-12 Indicadores | Tablero de sostenibilidad con filtros, solo datos validados y vista de tabla accesible |
+| HU-15 | RF-15 Documentos | Documentos versionados, validación por contenido, enlaces firmados y avisos de vencimiento |
+| HU-18 | RF-18 Reportes | Reportes oficiales en CSV y PDF, en segundo plano si superan un año |
+
+Atributos de calidad del sprint: **disponibilidad** (operación sin señal y entrega diferida),
+**seguridad** (anonimato, integridad por hash, autorización y auditoría) y **rendimiento**
+(prefiltros espaciales, agregados en base de datos y cachés de lectura).
+
+**Fuera de alcance por ahora (versión 2.0):** AMP como módulo propio (RF-13), datos ambientales
+(RF-14), marketplace (RF-16), rendimiento máximo sostenible (RF-17) y educación (RF-19).
+
+### Variables nuevas del MVP v1.1
+
+| Variable | Dónde | Para qué |
+| --- | --- | --- |
+| `VITE_GOOGLE_MAPS_API_KEY` | Frontend (build) | Mapa de Google; sin ella se usa el esquema sin conexión |
+| `VITE_GOOGLE_MAPS_MAP_ID` | Frontend (build) | Map ID propio; por defecto `DEMO_MAP_ID` |
+| `PUBLIC_REQUESTS_PER_MINUTE` | Backend | Límite por IP de los endpoints públicos (denuncias, verificación de lotes); 20 por defecto |
+| `UPLOADS_DIR` | Backend | Disco persistente para fotos de denuncias, documentos y exportaciones |
 
 ## Documentación
 

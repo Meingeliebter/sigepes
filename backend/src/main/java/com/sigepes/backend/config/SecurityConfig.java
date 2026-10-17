@@ -86,7 +86,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(allowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
-        configuration.setExposedHeaders(List.of("X-Correlation-Id"));
+        // Content-Disposition: el frontend lee el nombre del archivo exportado (RF-15, RF-18).
+        configuration.setExposedHeaders(List.of("X-Correlation-Id", "Content-Disposition"));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
