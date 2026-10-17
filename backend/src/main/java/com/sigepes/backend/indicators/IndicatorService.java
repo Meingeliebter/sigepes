@@ -59,7 +59,7 @@ public class IndicatorService {
 
     static final Duration CACHE_TTL = Duration.ofMinutes(15);
     private static final int MAX_RANGE_DAYS = 3 * 366;
-    private static final ZoneId ZONE = ZoneId.systemDefault();
+    private static final ZoneId ZONE = AppClock.ZONE;
 
     private final CatchRepository catchRepository;
     private final FishingTripRepository tripRepository;

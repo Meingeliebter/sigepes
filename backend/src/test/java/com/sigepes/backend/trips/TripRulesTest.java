@@ -21,6 +21,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /**
  * RF-03 / RF-05 / RF-06 / RF-08 · Reglas críticas de la bitácora: permiso, veda, talla mínima y
@@ -69,8 +70,8 @@ class TripRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("RN-16: bloquea la faena con permiso vencido")
     void blocksTripWithExpiredPermit() throws Exception {
-        givenPermit(fisher, "PES-TEST-EXP", PermitStatus.APPROVED, LocalDate.now().minusYears(2),
-                LocalDate.now().minusMonths(1));
+        givenPermit(fisher, "PES-TEST-EXP", PermitStatus.APPROVED, AppClock.today().minusYears(2),
+                AppClock.today().minusMonths(1));
 
         startTrip().andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("PERMIT_EXPIRED"));
@@ -79,8 +80,8 @@ class TripRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("RN-16: bloquea la faena con permiso rechazado")
     void blocksTripWithRejectedPermit() throws Exception {
-        givenPermit(fisher, "PES-TEST-REJ", PermitStatus.REJECTED, LocalDate.now().minusDays(5),
-                LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-TEST-REJ", PermitStatus.REJECTED, AppClock.today().minusDays(5),
+                AppClock.today().plusYears(1));
 
         startTrip().andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("PERMIT_REQUIRED"));
@@ -89,8 +90,8 @@ class TripRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("RN-16: bloquea la faena con permiso suspendido")
     void blocksTripWithSuspendedPermit() throws Exception {
-        givenPermit(fisher, "PES-TEST-SUS", PermitStatus.SUSPENDED, LocalDate.now().minusDays(5),
-                LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-TEST-SUS", PermitStatus.SUSPENDED, AppClock.today().minusDays(5),
+                AppClock.today().plusYears(1));
 
         startTrip().andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("PERMIT_SUSPENDED"));
@@ -99,8 +100,8 @@ class TripRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("Excepción de subsistencia: permite operar con permiso de subsistencia caducado")
     void allowsSubsistence() throws Exception {
-        givenPermit(fisher, "PES-TEST-SUB", PermitStatus.APPROVED, LocalDate.now().minusYears(3),
-                LocalDate.now().minusYears(1), "SUBSISTENCIA");
+        givenPermit(fisher, "PES-TEST-SUB", PermitStatus.APPROVED, AppClock.today().minusYears(3),
+                AppClock.today().minusYears(1), "SUBSISTENCIA");
 
         startTrip().andExpect(status().isCreated());
     }
@@ -198,7 +199,7 @@ class TripRulesTest extends ApiTestSupport {
     @DisplayName("Registra captura de una especie cuya veda no cubre la zona")
     void allowsCatchOutsideClosure() throws Exception {
         givenValidPermit();
-        givenClosure(snapper, "Caribe", LocalDate.now().minusDays(5), LocalDate.now().plusDays(5));
+        givenClosure(snapper, "Caribe", AppClock.today().minusDays(5), AppClock.today().plusDays(5));
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0").andExpect(status().isOk());
@@ -208,7 +209,7 @@ class TripRulesTest extends ApiTestSupport {
     @DisplayName("RN-10: rechaza captura de una especie en veda vigente para la zona")
     void rejectsCatchUnderClosure() throws Exception {
         givenValidPermit();
-        givenClosure(snapper, ZONE, LocalDate.now().minusDays(5), LocalDate.now().plusDays(5));
+        givenClosure(snapper, ZONE, AppClock.today().minusDays(5), AppClock.today().plusDays(5));
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0")
@@ -220,7 +221,7 @@ class TripRulesTest extends ApiTestSupport {
     @DisplayName("RN-10: una veda con zona TODAS bloquea cualquier zona")
     void rejectsCatchUnderGlobalClosure() throws Exception {
         givenValidPermit();
-        givenClosure(snapper, "TODAS", LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        givenClosure(snapper, "TODAS", AppClock.today().minusDays(1), AppClock.today().plusDays(1));
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0")
@@ -236,7 +237,7 @@ class TripRulesTest extends ApiTestSupport {
     @DisplayName("AC-05.5: una veda parcial bloquea a quien no tiene permiso de subsistencia")
     void blocksUnderPartialClosureWithoutSubsistencePermit() throws Exception {
         givenValidPermit();
-        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), ClosureType.PARTIAL);
+        givenClosure(snapper, ZONE, AppClock.today().minusDays(1), AppClock.today().plusDays(1), ClosureType.PARTIAL);
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0")
@@ -247,9 +248,9 @@ class TripRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("AC-05.5: una veda parcial permite a quien opera con permiso de subsistencia")
     void allowsUnderPartialClosureWithSubsistencePermit() throws Exception {
-        givenPermit(fisher, "PES-TEST-SUBS", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusMonths(6), "SUBSISTENCIA");
-        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), ClosureType.PARTIAL);
+        givenPermit(fisher, "PES-TEST-SUBS", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusMonths(6), "SUBSISTENCIA");
+        givenClosure(snapper, ZONE, AppClock.today().minusDays(1), AppClock.today().plusDays(1), ClosureType.PARTIAL);
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0").andExpect(status().isOk());
@@ -258,9 +259,9 @@ class TripRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("AC-05.5: una veda total bloquea incluso con permiso de subsistencia")
     void blocksUnderTotalClosureEvenWithSubsistencePermit() throws Exception {
-        givenPermit(fisher, "PES-TEST-SUBS2", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusMonths(6), "SUBSISTENCIA");
-        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), ClosureType.TOTAL);
+        givenPermit(fisher, "PES-TEST-SUBS2", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusMonths(6), "SUBSISTENCIA");
+        givenClosure(snapper, ZONE, AppClock.today().minusDays(1), AppClock.today().plusDays(1), ClosureType.TOTAL);
         String tripId = startedTripId();
 
         addCatch(tripId, snapper.getId(), "40.0", "80.0")
@@ -361,8 +362,8 @@ class TripRulesTest extends ApiTestSupport {
     // ------------------------------------------------------------------
 
     private void givenValidPermit() {
-        givenPermit(fisher, "PES-TEST-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusMonths(6));
+        givenPermit(fisher, "PES-TEST-1", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusMonths(6));
     }
 
     private org.springframework.test.web.servlet.ResultActions startTrip() throws Exception {

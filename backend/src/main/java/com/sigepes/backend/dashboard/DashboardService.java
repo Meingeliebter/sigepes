@@ -41,7 +41,7 @@ public class DashboardService {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd MMM yyyy",
             Locale.forLanguageTag("es"));
-    private static final ZoneId ZONE = ZoneId.systemDefault();
+    private static final ZoneId ZONE = AppClock.ZONE;
 
     private final VesselRepository vesselRepository;
     private final PermitRepository permitRepository;

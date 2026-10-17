@@ -24,6 +24,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 import jakarta.persistence.EntityManager;
 
@@ -50,8 +51,8 @@ class TraceabilityRulesTest extends ApiTestSupport {
         givenUser("2121212122", "otro.lote@sigepes.gov.co", Role.FISHER);
         VesselEntity vessel = givenVessel(fisher, "DIMAR-LOT-001", VesselStatus.ACTIVE, givenGear("Línea lote", false));
         snapper = givenSpecies("Pargo lote", new BigDecimal("35.00"));
-        givenPermit(fisher, "PES-LOT-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusMonths(6));
+        givenPermit(fisher, "PES-LOT-1", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusMonths(6));
         fisherToken = bearerFor("pescador.lote@sigepes.gov.co");
         otherToken = bearerFor("otro.lote@sigepes.gov.co");
 
@@ -89,7 +90,7 @@ class TraceabilityRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("TC-HU09-02 · RN-18: una veda declarada sobre la fecha de la faena bloquea el lote")
     void closureBlocksLot() throws Exception {
-        givenClosure(snapper, ZONE, LocalDate.now().minusDays(1), LocalDate.now().plusDays(10));
+        givenClosure(snapper, ZONE, AppClock.today().minusDays(1), AppClock.today().plusDays(10));
 
         createLot("50")
                 .andExpect(status().isUnprocessableEntity())

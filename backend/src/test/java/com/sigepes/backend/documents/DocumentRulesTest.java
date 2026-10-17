@@ -26,6 +26,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-15 · RF-15 / RN-30 · Gestión documental versionada. */
 class DocumentRulesTest extends ApiTestSupport {
@@ -55,7 +56,7 @@ class DocumentRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("TC-HU15-01 · Carga un certificado vinculado a su embarcación, con vencimiento")
     void uploadsDocument() throws Exception {
-        upload(fisherToken, LocalDate.now().plusYears(1), PDF_V1, "certificado.pdf")
+        upload(fisherToken, AppClock.today().plusYears(1), PDF_V1, "certificado.pdf")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.currentVersion").value(1))
                 .andExpect(jsonPath("$.expiryStatus").value("VALID"))
@@ -67,12 +68,12 @@ class DocumentRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("TC-HU15-02 · RN-30: una carga nueva es otra versión y la anterior se conserva")
     void versionsArePreserved() throws Exception {
-        String id = extract(upload(fisherToken, LocalDate.now().plusDays(20), PDF_V1, "certificado.pdf")
+        String id = extract(upload(fisherToken, AppClock.today().plusDays(20), PDF_V1, "certificado.pdf")
                 .andReturn().getResponse().getContentAsString(), "id");
 
         mockMvc.perform(multipart("/api/v1/documentos/" + id + "/versiones").header("Authorization", fisherToken)
                         .file(json("""
-                                {"expiresOn":"%s","note":"Renovación 2027"}""".formatted(LocalDate.now().plusYears(1))))
+                                {"expiresOn":"%s","note":"Renovación 2027"}""".formatted(AppClock.today().plusYears(1))))
                         .file(new MockMultipartFile("file", "certificado-2027.pdf", "application/pdf", PDF_V2)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.currentVersion").value(2))
@@ -140,7 +141,7 @@ class DocumentRulesTest extends ApiTestSupport {
         upload(otherToken, null, PDF_V1, "ajeno.pdf").andExpect(status().isForbidden());
 
         String closureId = givenClosure(givenSpecies("Robalo doc", new java.math.BigDecimal("40")), "Caribe",
-                LocalDate.now(), LocalDate.now().plusDays(30)).getId();
+                AppClock.today(), AppClock.today().plusDays(30)).getId();
         mockMvc.perform(multipart("/api/v1/documentos").header("Authorization", fisherToken)
                         .file(json("""
                                 {"docType":"RESOLUTION","title":"Resolución","entityType":"CLOSURE","entityId":"%s"}"""
@@ -152,7 +153,7 @@ class DocumentRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("TC-HU15-06 · AC-15.3: el vencimiento se refleja en el estado, en los filtros y en las alertas")
     void expiryFeedsStatusAndAlerts() throws Exception {
-        upload(fisherToken, LocalDate.now().plusDays(10), PDF_V1, "certificado.pdf")
+        upload(fisherToken, AppClock.today().plusDays(10), PDF_V1, "certificado.pdf")
                 .andExpect(jsonPath("$.expiryStatus").value("EXPIRING"));
 
         mockMvc.perform(get("/api/v1/documentos").param("estado", "EXPIRING").header("Authorization", fisherToken))

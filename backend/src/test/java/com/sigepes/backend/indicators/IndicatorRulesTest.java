@@ -19,6 +19,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-12 · RF-12 / RN-24 · Tablero de indicadores de sostenibilidad. */
 class IndicatorRulesTest extends ApiTestSupport {
@@ -43,8 +44,8 @@ class IndicatorRulesTest extends ApiTestSupport {
         VesselEntity otherVessel = givenVessel(other, "DIMAR-IND-002", VesselStatus.ACTIVE, givenGear("Línea ind 2", false));
         snapper = givenSpecies("Pargo indicador", new BigDecimal("35.00"));
         tuna = givenSpecies("Atún indicador", new BigDecimal("50.00"));
-        givenPermit(fisher, "PES-IND-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(6));
-        givenPermit(other, "PES-IND-2", PermitStatus.APPROVED, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(6));
+        givenPermit(fisher, "PES-IND-1", PermitStatus.APPROVED, AppClock.today().minusMonths(1), AppClock.today().plusMonths(6));
+        givenPermit(other, "PES-IND-2", PermitStatus.APPROVED, AppClock.today().minusMonths(1), AppClock.today().plusMonths(6));
         fisherToken = bearerFor("pescador.ind@sigepes.gov.co");
         otherToken = bearerFor("otro.ind@sigepes.gov.co");
         analystToken = bearerFor("analista.ind@sigepes.gov.co");
@@ -79,8 +80,8 @@ class IndicatorRulesTest extends ApiTestSupport {
         mockMvc.perform(get("/api/v1/indicadores").param("especieId", tuna.getId()).header("Authorization", analystToken))
                 .andExpect(jsonPath("$.totals.landedKg").value(250.0));
         mockMvc.perform(get("/api/v1/indicadores")
-                        .param("desde", LocalDate.now().plusDays(1).toString())
-                        .param("hasta", LocalDate.now().plusDays(5).toString())
+                        .param("desde", AppClock.today().plusDays(1).toString())
+                        .param("hasta", AppClock.today().plusDays(5).toString())
                         .header("Authorization", analystToken))
                 .andExpect(jsonPath("$.totals.landedKg").value(0));
     }
@@ -117,8 +118,8 @@ class IndicatorRulesTest extends ApiTestSupport {
     @DisplayName("Periodo inválido: la fecha inicial no puede ser posterior a la final")
     void rejectsInvertedRange() throws Exception {
         mockMvc.perform(get("/api/v1/indicadores")
-                        .param("desde", LocalDate.now().toString())
-                        .param("hasta", LocalDate.now().minusDays(3).toString())
+                        .param("desde", AppClock.today().toString())
+                        .param("hasta", AppClock.today().minusDays(3).toString())
                         .header("Authorization", analystToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
