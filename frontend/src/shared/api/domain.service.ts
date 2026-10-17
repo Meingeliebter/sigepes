@@ -308,6 +308,58 @@ export interface DashboardSummary {
   compliance: ComplianceRow[];
 }
 
+export type OfficialReportKind = 'LANDINGS' | 'QUOTA_COMPLIANCE' | 'PERMITS' | 'ILLEGAL_REPORTS' | 'ZONE_EVENTS';
+export type ExportFormat = 'CSV' | 'PDF';
+
+export interface OfficialReportCatalogEntry {
+  kind: OfficialReportKind;
+  title: string;
+  regionFilter: boolean;
+  speciesFilter: boolean;
+}
+
+export interface OfficialReportPreview {
+  table: {
+    kind: OfficialReportKind;
+    title: string;
+    columns: string[];
+    rows: string[][];
+    filters: string[];
+    footnotes: string[];
+    generatedBy: string;
+    generatedAt: string;
+  };
+  totalRows: number;
+  truncated: boolean;
+  /** AC-18.5: el periodo supera un año y la exportación se generará en segundo plano. */
+  background: boolean;
+}
+
+export interface ExportJob {
+  id: string;
+  kind: OfficialReportKind;
+  title: string;
+  format: ExportFormat;
+  from: string;
+  to: string;
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED';
+  rowCount?: number;
+  error?: string;
+  createdAt: string;
+  finishedAt?: string;
+}
+
+export type ExportOutcome = { kind: 'file'; blob: Blob; filename: string } | { kind: 'job'; job: ExportJob };
+
+/** Nombre del archivo desde Content-Disposition (filename* UTF-8 si viene). */
+function filenameFrom(disposition: string | undefined, fallback: string): string {
+  if (!disposition) return fallback;
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  if (encoded) return decodeURIComponent(encoded[1]);
+  const plain = /filename="?([^";]+)"?/i.exec(disposition);
+  return plain ? plain[1] : fallback;
+}
+
 export type DocType = 'ID_DOCUMENT' | 'VESSEL_CERTIFICATE' | 'PERMIT' | 'RESOLUTION' | 'OTHER';
 export type DocEntityType = 'USER' | 'VESSEL' | 'PERMIT' | 'CLOSURE';
 export type DocExpiryStatus = 'VALID' | 'EXPIRING' | 'EXPIRED' | 'NO_EXPIRY';
@@ -445,7 +497,7 @@ export interface PublicLot {
   chain: ChainEvent[];
 }
 
-export type AlertType = 'CLOSURE' | 'QUOTA' | 'PERMIT' | 'ZONE' | 'REPORT' | 'SECURITY' | 'DOCUMENT';
+export type AlertType = 'CLOSURE' | 'QUOTA' | 'PERMIT' | 'ZONE' | 'REPORT' | 'SECURITY' | 'DOCUMENT' | 'EXPORT';
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 
 export interface AppAlert {
@@ -794,6 +846,36 @@ export const domainService = {
   async summary(): Promise<DashboardSummary> {
     return (await httpClient.get<DashboardSummary>('/resumen')).data;
   },
+  // --- Reportes oficiales (RF-18) --------------------------------------
+  async officialCatalog(): Promise<OfficialReportCatalogEntry[]> {
+    return (await httpClient.get<OfficialReportCatalogEntry[]>('/reportes-oficiales')).data;
+  },
+  async officialPreview(kind: OfficialReportKind, filters: IndicatorFilters): Promise<OfficialReportPreview> {
+    return (await httpClient.get<OfficialReportPreview>(`/reportes-oficiales/${kind}/vista`, { params: indicatorParams(filters) })).data;
+  },
+  /** AC-18.5: hasta un año devuelve el archivo; más largo responde 202 con el trabajo en cola. */
+  async officialExport(kind: OfficialReportKind, format: ExportFormat, filters: IndicatorFilters): Promise<ExportOutcome> {
+    const response = await httpClient.get<Blob>(`/reportes-oficiales/${kind}/exportar`, {
+      params: { ...indicatorParams(filters), formato: format },
+      responseType: 'blob',
+    });
+    if (response.status === 202) {
+      return { kind: 'job', job: JSON.parse(await response.data.text()) as ExportJob };
+    }
+    const fallback = `sigepes_${kind.toLowerCase()}.${format.toLowerCase()}`;
+    return { kind: 'file', blob: response.data, filename: filenameFrom(response.headers['content-disposition'] as string | undefined, fallback) };
+  },
+  async exportJobs(): Promise<ExportJob[]> {
+    return (await httpClient.get<ExportJob[]>('/reportes-oficiales/trabajos')).data;
+  },
+  async exportJobFile(job: ExportJob): Promise<{ blob: Blob; filename: string }> {
+    const response = await httpClient.get<Blob>(`/reportes-oficiales/trabajos/${job.id}/archivo`, { responseType: 'blob' });
+    return {
+      blob: response.data,
+      filename: filenameFrom(response.headers['content-disposition'] as string | undefined, `sigepes_${job.kind.toLowerCase()}.${job.format.toLowerCase()}`),
+    };
+  },
+
   // --- Documentos (RF-15) ----------------------------------------------
   async documents(filters: { tipo?: DocType | ''; entidad?: DocEntityType | ''; estado?: DocExpiryStatus | '' } = {}): Promise<DocumentRecord[]> {
     const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));

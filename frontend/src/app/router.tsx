@@ -27,6 +27,7 @@ import { ReportsQueuePage } from '../modules/reports/pages/ReportsQueuePage';
 import { LotsPage } from '../modules/traceability/pages/LotsPage';
 import { IndicatorsPage } from '../modules/indicators/pages/IndicatorsPage';
 import { DocumentsPage } from '../modules/documents/pages/DocumentsPage';
+import { OfficialReportsPage } from '../modules/statistics/pages/OfficialReportsPage';
 import { PublicLotPage } from '../modules/traceability/pages/PublicLotPage';
 
 export const router = createBrowserRouter([
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
           { element: <RoleRoute allow={['ADMIN']} />, children: [{ path: 'users', element: <UsersPage /> }] },
           { element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />, children: [{ path: 'audit', element: <AuditPage /> }] },
           { element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />, children: [{ path: 'reports', element: <ReportsQueuePage /> }] },
+          { element: <RoleRoute allow={['INSPECTOR', 'ANALYST', 'ADMIN']} />, children: [{ path: 'official-reports', element: <OfficialReportsPage /> }] },
           {
             element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />,
             children: [

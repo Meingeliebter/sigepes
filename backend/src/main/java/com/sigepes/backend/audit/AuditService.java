@@ -44,6 +44,7 @@ public class AuditService {
     public static final String MODULE_REPORTS = "denuncias";
     public static final String MODULE_TRACEABILITY = "trazabilidad";
     public static final String MODULE_DOCUMENTS = "documentos";
+    public static final String MODULE_STATISTICS = "reportes-oficiales";
 
     private static final int MAX_DETAIL = 600;
     private static final int MAX_STATE = 2000;

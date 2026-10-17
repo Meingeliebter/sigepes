@@ -90,6 +90,10 @@ public enum ErrorCode {
             "El archivo debe ser un PDF, JPG o PNG real (se revisa su contenido, no la extensión)."),
     DOCUMENT_LINK_EXPIRED(HttpStatus.GONE, "El enlace de descarga caducó o no es válido. Genera uno nuevo."),
 
+    // --- Reportes oficiales (RF-18) -----------------------------------
+    EXPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "La exportación no existe."),
+    EXPORT_NOT_READY(HttpStatus.CONFLICT, "La exportación todavía se está generando."),
+
     // --- Alertas (RF-11) ----------------------------------------------
     ALERT_NOT_FOUND(HttpStatus.NOT_FOUND, "La alerta no existe."),
     ALERT_CRITICAL_PERSISTENT(HttpStatus.UNPROCESSABLE_ENTITY,

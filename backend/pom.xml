@@ -44,6 +44,13 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- RF-18: exportación de reportes oficiales a PDF (LGPL/MPL). -->
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+
 		<!-- En Spring Boot 4 la autoconfiguración de Flyway vive en su propio módulo. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
