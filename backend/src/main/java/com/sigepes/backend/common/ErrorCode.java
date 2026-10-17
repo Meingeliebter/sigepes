@@ -68,6 +68,10 @@ public enum ErrorCode {
     QUOTA_EXHAUSTED(HttpStatus.UNPROCESSABLE_ENTITY, "La captura excede la cuota disponible."),
     INVALID_QUOTA_PERIOD(HttpStatus.BAD_REQUEST, "El periodo de la cuota no es válido."),
 
+    // --- Geolocalización (RF-04) ---------------------------------------
+    ZONE_NOT_FOUND(HttpStatus.NOT_FOUND, "La zona restringida no existe."),
+    INVALID_ZONE_POLYGON(HttpStatus.BAD_REQUEST, "El polígono de la zona no es válido."),
+
     // --- Genéricos ----------------------------------------------------
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Hay errores de validación en la solicitud."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "La operación no está permitida sobre este recurso."),

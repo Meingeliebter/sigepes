@@ -40,6 +40,7 @@ public class AuditService {
     public static final String MODULE_PERMITS = "permisos";
     public static final String MODULE_TRIPS = "faenas";
     public static final String MODULE_QUOTAS = "cuotas";
+    public static final String MODULE_GEO = "geolocalizacion";
 
     private static final int MAX_DETAIL = 600;
     private static final int MAX_STATE = 2000;

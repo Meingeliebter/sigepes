@@ -2,6 +2,7 @@ import { httpClient } from './httpClient';
 import type { Role } from '../../modules/auth/types/auth.types';
 import { cacheSpecies, getCachedSpecies } from '../storage/speciesOfflineStore';
 import { cacheQuotas, getCachedQuotas } from '../storage/quotaOfflineStore';
+import { cacheZones, getCachedZones } from '../storage/zoneOfflineStore';
 
 export interface Vessel {
   id: string;
@@ -87,6 +88,52 @@ export interface Quota {
   notes?: string | null;
 }
 
+/** RF-04: zona restringida (AMP o zona en veda) con su polígono [[lat, lon], ...]. */
+export interface RestrictedZone {
+  id: string;
+  name: string;
+  zoneType: 'CLOSURE_ZONE' | 'MPA' | 'OTHER';
+  polygon: [number, number][];
+  resolutionNumber: string;
+  description?: string | null;
+  active: boolean;
+}
+
+/** AC-04.1: posición GPS capturada en el dispositivo. El id lo genera el cliente (idempotencia). */
+export interface PositionInput {
+  id: string;
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number | null;
+  recordedAt: string;
+}
+
+export interface TripPosition extends PositionInput {
+  insideZoneId?: string | null;
+  insideZone?: string | null;
+}
+
+export interface ZoneEvent {
+  id: string;
+  tripId: string;
+  zoneId: string;
+  zone: string;
+  zoneType: string;
+  resolutionNumber: string;
+  ownerName: string;
+  vessel: string;
+  latitude: number;
+  longitude: number;
+  occurredAt: string;
+  status: 'OPEN' | 'REVIEWED';
+}
+
+export interface PositionBatchResult {
+  stored: number;
+  duplicates: number;
+  intrusions: ZoneEvent[];
+}
+
 export type PermitStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'EXPIRED';
 
 export interface PermitAttachment {
@@ -141,6 +188,8 @@ export interface Trip {
   landingLatitude?: number | null;
   landingLongitude?: number | null;
   totalWeightKg?: number;
+  /** AC-04.6: recorrido capturado sin conexión, se envía al sincronizar. */
+  positions?: PositionInput[];
 }
 
 export interface AuditEvent {
@@ -362,6 +411,47 @@ export const domainService = {
     payload: Partial<{ totalKg: number; to: string; status: 'ACTIVE' | 'CLOSED'; notes: string }>,
   ): Promise<Quota> {
     return (await httpClient.patch<Quota>(`/cuotas/${id}`, payload)).data;
+  },
+
+  // --- Geolocalización (RF-04) ----------------------------------------
+  /** AC-04.6: las zonas se cachean para comprobar intrusiones en el propio dispositivo sin señal. */
+  async zones(): Promise<RestrictedZone[]> {
+    try {
+      const data = (await httpClient.get<RestrictedZone[]>('/zonas-restringidas')).data;
+      cacheZones(data);
+      return data;
+    } catch (error) {
+      const cached = getCachedZones();
+      if (cached) return cached;
+      throw error;
+    }
+  },
+  async createZone(payload: {
+    name: string;
+    zoneType: RestrictedZone['zoneType'];
+    polygon: [number, number][];
+    resolutionNumber: string;
+    description?: string;
+  }): Promise<RestrictedZone> {
+    return (await httpClient.post<RestrictedZone>('/zonas-restringidas', payload)).data;
+  },
+  async updateZone(id: string, payload: { active?: boolean; description?: string }): Promise<RestrictedZone> {
+    return (await httpClient.patch<RestrictedZone>(`/zonas-restringidas/${id}`, payload)).data;
+  },
+  async postPositions(tripId: string, positions: PositionInput[]): Promise<PositionBatchResult> {
+    return (await httpClient.post<PositionBatchResult>(`/faenas/${tripId}/posiciones`, { positions })).data;
+  },
+  async tripPositions(tripId: string): Promise<TripPosition[]> {
+    return (await httpClient.get<TripPosition[]>(`/faenas/${tripId}/posiciones`)).data;
+  },
+  async tripZoneEvents(tripId: string): Promise<ZoneEvent[]> {
+    return (await httpClient.get<ZoneEvent[]>(`/faenas/${tripId}/eventos-zona`)).data;
+  },
+  async zoneEvents(): Promise<ZoneEvent[]> {
+    return (await httpClient.get<ZoneEvent[]>('/eventos-zona')).data;
+  },
+  async reviewZoneEvent(id: string): Promise<ZoneEvent> {
+    return (await httpClient.patch<ZoneEvent>(`/eventos-zona/${id}/revisar`)).data;
   },
 
   // --- Permisos (RF-08) -----------------------------------------------

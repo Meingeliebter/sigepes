@@ -2,6 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import EditIcon from '@mui/icons-material/Edit';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import RouteIcon from '@mui/icons-material/Route';
 import {
   Alert, Button, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
   IconButton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip,
@@ -20,6 +21,7 @@ import { getPendingTrips } from '../../../shared/storage/tripOfflineStore';
 import { syncPendingTrips } from '../../../shared/sync/tripSync';
 import { useAuthStore } from '../../auth/store/authStore';
 import { isAuthority } from '../../auth/types/auth.types';
+import { TripRouteDialog } from '../components/TripRouteDialog';
 
 const EMPTY_CORRECTION = { zone: '', arrivalTime: '', notes: '', reason: '' };
 
@@ -35,6 +37,7 @@ export function TripsPage() {
   const [syncing, setSyncing] = useState(false);
   const [correctingTrip, setCorrectingTrip] = useState<Trip | null>(null);
   const [correction, setCorrection] = useState(EMPTY_CORRECTION);
+  const [routeTrip, setRouteTrip] = useState<Trip | null>(null);
 
   const trips = tripsQuery.data ?? [];
   const visibleTrips = [...trips, ...pendingTrips.filter((pending) => !trips.some((trip) => trip.id === pending.id))];
@@ -110,7 +113,7 @@ export function TripsPage() {
                       <TableCell>Fecha</TableCell>
                       <TableCell align="right">Captura (kg)</TableCell>
                       <TableCell>Estado</TableCell>
-                      {canCorrect && <TableCell align="right">Acciones</TableCell>}
+                      <TableCell align="right">Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -122,17 +125,22 @@ export function TripsPage() {
                         <TableCell>{trip.date}</TableCell>
                         <TableCell align="right">{trip.captures.reduce((total, capture) => total + capture.weightKg, 0)}</TableCell>
                         <TableCell><StatusChip status={trip.status} /></TableCell>
-                        {canCorrect && (
-                          <TableCell align="right">
-                            {!trip.id.startsWith('LOCAL-') && (
-                              <Tooltip title="Corregir (queda auditado)">
-                                <IconButton size="small" onClick={() => openCorrection(trip)} aria-label="Corregir faena">
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        )}
+                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                          {trip.status !== 'PENDING_SYNC' && (
+                            <Tooltip title="Ver recorrido y zonas">
+                              <IconButton size="small" onClick={() => setRouteTrip(trip)} aria-label={`Ver recorrido de la faena ${trip.id}`}>
+                                <RouteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {canCorrect && trip.status !== 'PENDING_SYNC' && (
+                            <Tooltip title="Corregir (queda auditado)">
+                              <IconButton size="small" onClick={() => openCorrection(trip)} aria-label="Corregir faena">
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -145,6 +153,8 @@ export function TripsPage() {
           )}
         </CardContent>
       </Card>
+
+      <TripRouteDialog trip={routeTrip} onClose={() => setRouteTrip(null)} />
 
       <Dialog open={!!correctingTrip} onClose={() => setCorrectingTrip(null)} fullWidth maxWidth="sm">
         <DialogTitle>Corregir faena {correctingTrip?.id}</DialogTitle>

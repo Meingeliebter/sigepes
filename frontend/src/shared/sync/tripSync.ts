@@ -42,6 +42,12 @@ export async function syncPendingTrips(queryClient: QueryClient): Promise<SyncRe
 
   try {
     await domainService.sync(pending.map(toPendingTripPayload));
+    // AC-04.6: el recorrido capturado sin señal se envía después; el servidor ignora duplicados.
+    for (const trip of pending) {
+      if (trip.positions && trip.positions.length > 0) {
+        await domainService.postPositions(trip.id, trip.positions);
+      }
+    }
     clearPendingTrips();
     await queryClient.invalidateQueries({ queryKey: ['trips'] });
     await queryClient.invalidateQueries({ queryKey: ['summary'] });
