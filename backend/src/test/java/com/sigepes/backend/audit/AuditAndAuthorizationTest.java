@@ -22,6 +22,7 @@ import com.sigepes.backend.support.ApiTestSupport;
 import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** RF-20 · Auditoría de operaciones sensibles y autorización por rol. */
 class AuditAndAuthorizationTest extends ApiTestSupport {
@@ -69,8 +70,8 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
     @Test
     @DisplayName("El cierre de una faena queda auditado")
     void auditsTripClosure() throws Exception {
-        givenPermit(fisher, "PES-AUD-1", PermitStatus.APPROVED, LocalDate.now().minusDays(1),
-                LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-AUD-1", PermitStatus.APPROVED, AppClock.today().minusDays(1),
+                AppClock.today().plusYears(1));
         var vessel = givenVessel(fisher, "DIMAR-AUD-1", VesselStatus.ACTIVE);
 
         String tripResponse = mockMvc.perform(post("/api/v1/faenas").header("Authorization", fisherToken)
@@ -95,8 +96,8 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
     @Test
     @DisplayName("La aprobación de un permiso queda auditada con estado anterior y posterior")
     void auditsPermitApproval() throws Exception {
-        String id = givenPermit(fisher, "PES-AUD-2", PermitStatus.PENDING, LocalDate.now(),
-                LocalDate.now().plusYears(1)).getId();
+        String id = givenPermit(fisher, "PES-AUD-2", PermitStatus.PENDING, AppClock.today(),
+                AppClock.today().plusYears(1)).getId();
 
         mockMvc.perform(patch("/api/v1/permisos/" + id + "/evaluar").header("Authorization", inspectorToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -115,8 +116,8 @@ class AuditAndAuthorizationTest extends ApiTestSupport {
     @Test
     @DisplayName("La corrección de una faena cerrada queda auditada")
     void auditsTripCorrection() throws Exception {
-        givenPermit(fisher, "PES-AUD-3", PermitStatus.APPROVED, LocalDate.now().minusDays(1),
-                LocalDate.now().plusYears(1));
+        givenPermit(fisher, "PES-AUD-3", PermitStatus.APPROVED, AppClock.today().minusDays(1),
+                AppClock.today().plusYears(1));
         var vessel = givenVessel(fisher, "DIMAR-AUD-2", VesselStatus.ACTIVE);
         var species = givenSpecies("Corvina aud", new BigDecimal("30.00"));
 
