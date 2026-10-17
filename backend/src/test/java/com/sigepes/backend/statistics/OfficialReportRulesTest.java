@@ -27,6 +27,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-18 · RF-18 / RN-36 · Reportes y estadísticas para autoridades. */
 class OfficialReportRulesTest extends ApiTestSupport {
@@ -48,7 +49,7 @@ class OfficialReportRulesTest extends ApiTestSupport {
         givenUser("5151515153", "inspector.rep@sigepes.gov.co", Role.INSPECTOR);
         VesselEntity vessel = givenVessel(fisher, "DIMAR-REP-001", VesselStatus.ACTIVE, givenGear("Línea rep", false));
         SpeciesEntity snapper = givenSpecies("Pargo reporte", new BigDecimal("35.00"));
-        givenPermit(fisher, "PES-REP-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(6));
+        givenPermit(fisher, "PES-REP-1", PermitStatus.APPROVED, AppClock.today().minusMonths(1), AppClock.today().plusMonths(6));
         fisherToken = bearerFor("pescador.rep@sigepes.gov.co");
         analystToken = bearerFor("analista.rep@sigepes.gov.co");
         inspectorToken = bearerFor("inspector.rep@sigepes.gov.co");
@@ -102,8 +103,8 @@ class OfficialReportRulesTest extends ApiTestSupport {
     @DisplayName("TC-HU18-04 · AC-18.5: más de un año se genera en segundo plano y avisa por el buzón")
     void longExportsRunInBackground() throws Exception {
         String job = mockMvc.perform(get("/api/v1/reportes-oficiales/LANDINGS/exportar").param("formato", "CSV")
-                        .param("desde", LocalDate.now().minusYears(2).toString())
-                        .param("hasta", LocalDate.now().toString())
+                        .param("desde", AppClock.today().minusYears(2).toString())
+                        .param("hasta", AppClock.today().toString())
                         .header("Authorization", analystToken))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("PENDING"))
@@ -135,7 +136,7 @@ class OfficialReportRulesTest extends ApiTestSupport {
                         .file(new MockMultipartFile("request", "", MediaType.APPLICATION_JSON_VALUE, """
                                 {"reportType":"OTHER","description":"Pesca con dinamita frente a la playa","occurredOn":"%s",
                                  "latitude":6.214567,"longitude":-77.501234,"anonymous":false}"""
-                                .formatted(LocalDate.now()).getBytes(StandardCharsets.UTF_8))))
+                                .formatted(AppClock.today()).getBytes(StandardCharsets.UTF_8))))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/v1/reportes-oficiales/ILLEGAL_REPORTS/vista").header("Authorization", inspectorToken))

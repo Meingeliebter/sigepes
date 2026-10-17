@@ -3,7 +3,6 @@ package com.sigepes.backend.statistics;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -20,6 +19,8 @@ import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 
+import com.sigepes.backend.common.AppClock;
+
 /**
  * AC-18.3 · Exporta un {@link StatTable} a CSV o PDF con el mismo encabezado: SIGEPES, título,
  * fecha de generación, filtros usados y quién lo generó; las notas de registros excluidos van al
@@ -29,7 +30,7 @@ import com.lowagie.text.pdf.PdfWriter;
 class ReportRenderer {
 
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-            .withZone(ZoneId.systemDefault());
+            .withZone(AppClock.ZONE);
     private static final Color NAVY = new Color(0x0B, 0x3B, 0x5C);
     private static final Color ROW_TINT = new Color(0xEE, 0xF5, 0xF7);
 

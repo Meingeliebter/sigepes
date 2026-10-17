@@ -42,7 +42,7 @@ import com.sigepes.backend.trips.TripStatus;
 @Component
 class OfficialReportBuilder {
 
-    private static final ZoneId ZONE = ZoneId.systemDefault();
+    private static final ZoneId ZONE = AppClock.ZONE;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final Map<String, String> REPORT_TYPE = Map.of(
             "CLOSURE_FISHING", "Pesca en veda", "UNDERSIZED_CATCH", "Captura bajo talla mínima",
