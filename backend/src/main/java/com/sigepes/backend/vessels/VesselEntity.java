@@ -43,7 +43,15 @@ public class VesselEntity {
     @Column(name = "vessel_type", length = 60)
     private String vesselType;
 
-    @Column(name = "capacity_tons", precision = 10, scale = 2)
+    /** AC-02.2: tipo de casco de la embarcación. */
+    @Column(name = "hull_type", length = 60, nullable = false)
+    private String hullType;
+
+    /** AC-02.2: potencia del motor, en HP. */
+    @Column(name = "engine_power", precision = 10, scale = 2, nullable = false)
+    private BigDecimal enginePower;
+
+    @Column(name = "capacity_tons", precision = 10, scale = 2, nullable = false)
     private BigDecimal capacityTons;
 
     @Enumerated(EnumType.STRING)
@@ -122,6 +130,22 @@ public class VesselEntity {
 
     public void setVesselType(String vesselType) {
         this.vesselType = vesselType;
+    }
+
+    public String getHullType() {
+        return hullType;
+    }
+
+    public void setHullType(String hullType) {
+        this.hullType = hullType;
+    }
+
+    public BigDecimal getEnginePower() {
+        return enginePower;
+    }
+
+    public void setEnginePower(BigDecimal enginePower) {
+        this.enginePower = enginePower;
     }
 
     public BigDecimal getCapacityTons() {

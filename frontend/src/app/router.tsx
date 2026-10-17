@@ -17,6 +17,7 @@ import { PermitsPage } from '../modules/permits/pages/PermitsPage';
 import { NotificationsPage } from '../modules/notifications/pages/NotificationsPage';
 import { UsersPage } from '../modules/users/pages/UsersPage';
 import { AuditPage } from '../modules/audit/pages/AuditPage';
+import { VesselAuditPage } from '../modules/inspections/pages/VesselAuditPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
           { path: 'access-denied', element: <AccessDeniedPage /> },
           { element: <RoleRoute allow={['ADMIN']} />, children: [{ path: 'users', element: <UsersPage /> }] },
           { element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />, children: [{ path: 'audit', element: <AuditPage /> }] },
+          {
+            element: <RoleRoute allow={['INSPECTOR', 'ADMIN']} />,
+            children: [{ path: 'inspections/scan', element: <VesselAuditPage /> }],
+          },
         ],
       },
     ],

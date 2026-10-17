@@ -7,6 +7,7 @@ import java.util.List;
 import com.sigepes.backend.gears.FishingGearEntity;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -33,6 +34,8 @@ public final class VesselDtos {
             String ownerId,
             String ownerName,
             String type,
+            String hullType,
+            BigDecimal enginePower,
             BigDecimal capacityTons) {
 
         public static VesselResponse from(VesselEntity entity) {
@@ -50,6 +53,8 @@ public final class VesselDtos {
                     entity.getOwner().getId(),
                     entity.getOwner().getFullName(),
                     entity.getVesselType(),
+                    entity.getHullType(),
+                    entity.getEnginePower(),
                     entity.getCapacityTons());
         }
     }
@@ -70,12 +75,21 @@ public final class VesselDtos {
 
             List<String> gears,
 
-            @Pattern(regexp = "ACTIVE|UNDER_MAINTENANCE|INACTIVE", message = "El estado no es válido")
+            @Pattern(regexp = "ACTIVE|UNDER_MAINTENANCE|DECOMMISSIONED|SUSPENDED", message = "El estado no es válido")
             String status,
 
             @Size(max = 60, message = "El tipo no puede superar 60 caracteres")
             String type,
 
+            @NotBlank(message = "El tipo de casco es obligatorio")
+            @Size(max = 60, message = "El tipo de casco no puede superar 60 caracteres")
+            String hullType,
+
+            @NotNull(message = "La potencia del motor es obligatoria")
+            @Positive(message = "La potencia del motor debe ser mayor que cero")
+            BigDecimal enginePower,
+
+            @NotNull(message = "La capacidad es obligatoria")
             @Positive(message = "La capacidad debe ser mayor que cero")
             BigDecimal capacityTons,
 
@@ -85,7 +99,7 @@ public final class VesselDtos {
 
     /** Actualización de estado y artes de una embarcación. */
     public record UpdateVesselRequest(
-            @Pattern(regexp = "ACTIVE|UNDER_MAINTENANCE|INACTIVE", message = "El estado no es válido")
+            @Pattern(regexp = "ACTIVE|UNDER_MAINTENANCE|DECOMMISSIONED|SUSPENDED", message = "El estado no es válido")
             String status,
 
             List<String> gears,

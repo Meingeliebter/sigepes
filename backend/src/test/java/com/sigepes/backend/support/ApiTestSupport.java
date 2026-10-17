@@ -86,6 +86,9 @@ public abstract class ApiTestSupport {
                 "Bahía Solano", owner);
         vessel.setStatus(status);
         vessel.setGears(new LinkedHashSet<>(Set.of(gears)));
+        vessel.setHullType("Fibra de vidrio");
+        vessel.setEnginePower(new BigDecimal("75.00"));
+        vessel.setCapacityTons(new BigDecimal("5.00"));
         return vesselRepository.save(vessel);
     }
 

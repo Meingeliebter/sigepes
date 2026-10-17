@@ -77,8 +77,12 @@ class TripWithoutAmbientTransactionTest {
     void setUp() throws Exception {
         fisher = userService.create("9090001122", "Sin Transaccion", "sin.tx@sigepes.gov.co", Role.FISHER, PASSWORD,
                 false);
-        vessel = vesselRepository.save(
-                new VesselEntity(Ids.generate("emb"), "Sin Tx", "DIMAR-NOTX-1", "Bahía Solano", fisher));
+        VesselEntity newVessel = new VesselEntity(Ids.generate("emb"), "Sin Tx", "DIMAR-NOTX-1", "Bahía Solano",
+                fisher);
+        newVessel.setHullType("Fibra de vidrio");
+        newVessel.setEnginePower(new BigDecimal("75.00"));
+        newVessel.setCapacityTons(new BigDecimal("5.00"));
+        vessel = vesselRepository.save(newVessel);
         species = speciesRepository.save(new SpeciesEntity(Ids.generate("esp"), "Pargo sin tx", "Lutjanus notx",
                 new BigDecimal("35.00"), SpeciesStatus.ACTIVE));
         permitRepository.save(new PermitEntity(Ids.generate("per"), "PES-NOTX-1", "Pesca artesanal",

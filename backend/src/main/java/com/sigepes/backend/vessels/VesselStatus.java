@@ -4,5 +4,6 @@ package com.sigepes.backend.vessels;
 public enum VesselStatus {
     ACTIVE,
     UNDER_MAINTENANCE,
-    INACTIVE
+    DECOMMISSIONED,
+    SUSPENDED
 }
