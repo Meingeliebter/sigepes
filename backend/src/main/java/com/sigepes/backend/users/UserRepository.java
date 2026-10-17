@@ -1,5 +1,6 @@
 package com.sigepes.backend.users;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,7 @@ public interface UserRepository extends JpaRepository<UserEntity, String> {
     boolean existsByNationalId(String nationalId);
 
     List<UserEntity> findAllByOrderByFullNameAsc();
+
+    /** Destinatarios de alertas por rol (RF-11). */
+    List<UserEntity> findByRoleInAndStatus(Collection<Role> roles, UserStatus status);
 }

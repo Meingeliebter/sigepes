@@ -26,6 +26,7 @@ import com.sigepes.backend.common.ErrorCode;
 import com.sigepes.backend.security.JwtAuthenticationFilter;
 import com.sigepes.backend.security.RateLimitFilter;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
@@ -54,6 +55,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // El canal de alertas (SSE) se autentica en la petición inicial; los despachos
+                        // asíncronos y de error posteriores no traen el token de nuevo.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()

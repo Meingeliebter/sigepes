@@ -208,12 +208,13 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("AC-08.2: clasifica la urgencia de la alerta según los días restantes")
     void classifiesExpiryAlertSeverity() throws Exception {
-        String permitId = givenPermit(fisher, "PES-LC-10", PermitStatus.APPROVED, LocalDate.now().minusMonths(6),
-                LocalDate.now().plusDays(3)).getId();
+        givenPermit(fisher, "PES-LC-10", PermitStatus.APPROVED, LocalDate.now().minusMonths(6),
+                LocalDate.now().plusDays(3));
 
-        mockMvc.perform(get("/api/v1/notificaciones").header("Authorization", fisherToken))
+        alertSweeper.sweep();
+        mockMvc.perform(get("/api/v1/alertas").header("Authorization", fisherToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id=='permit-" + permitId + "')].severity").value("CRITICAL"));
+                .andExpect(jsonPath("$.alerts[?(@.title=='Permiso PES-LC-10 por vencer')].severity").value("CRITICAL"));
     }
 
     @Test

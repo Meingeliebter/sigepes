@@ -106,14 +106,15 @@ class AuditControllerTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.alerts", org.hamcrest.Matchers.hasItem(
                         org.hamcrest.Matchers.containsString("actividad sospechosa"))));
 
-        mockMvc.perform(get("/api/v1/notificaciones").header("Authorization", adminToken))
+        alertSweeper.sweep();
+        mockMvc.perform(get("/api/v1/alertas").header("Authorization", adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id=~/security-.*/)]").exists());
+                .andExpect(jsonPath("$.alerts[?(@.type=='SECURITY')]").exists());
 
         // Un INSPECTOR (autoridad, pero no ADMIN) no debe ver el incidente de seguridad.
-        mockMvc.perform(get("/api/v1/notificaciones").header("Authorization", inspectorToken))
+        mockMvc.perform(get("/api/v1/alertas").header("Authorization", inspectorToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id=~/security-.*/)]").doesNotExist());
+                .andExpect(jsonPath("$.alerts[?(@.type=='SECURITY')]").doesNotExist());
 
         assertTrue(auditLogRepository.findSuspiciousLoginIps(
                         java.time.Instant.now().minusSeconds(900), 5).size() > 0,

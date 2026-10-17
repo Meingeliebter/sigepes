@@ -1,4 +1,5 @@
 import BlockIcon from '@mui/icons-material/Block';
+import CloseIcon from '@mui/icons-material/Close';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import MarkEmailUnreadOutlinedIcon from '@mui/icons-material/MarkEmailUnreadOutlined';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -16,12 +17,12 @@ import PhishingIcon from '@mui/icons-material/Phishing';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import {
-  Alert, AppBar, Avatar, Box, Button, Drawer, IconButton, List, ListItemButton,
+  Alert, AppBar, Avatar, Badge, Box, Button, Drawer, IconButton, List, ListItemButton, Snackbar,
   ListItemIcon, ListItemText, ListSubheader, Stack, Toolbar, Tooltip, Typography, useMediaQuery, useTheme,
   BottomNavigation, BottomNavigationAction,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -39,6 +40,8 @@ import { pendingTripCount } from '../../shared/storage/tripOfflineStore';
 import { syncPendingTrips } from '../../shared/sync/tripSync';
 import { flushReportOutbox } from '../../shared/sync/reportSync';
 import { glass } from '../../shared/theme/theme';
+import { useAlertStream } from '../../shared/alerts/useAlertStream';
+import { domainService, type AppAlert } from '../../shared/api/domain.service';
 
 const WIDTH = 264;
 const BAR_HEIGHT = 64;
@@ -76,6 +79,20 @@ export function AppLayout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const online = useOnlineStatus();
+  // AC-11.2: la campana muestra las no leídas. El canal en vivo la actualiza al instante y esta
+  // consulta es el respaldo si el canal se cae (AC-11.5).
+  const unreadQuery = useQuery({
+    queryKey: ['alerts', 'unread'],
+    queryFn: domainService.unreadAlerts,
+    refetchInterval: 60_000,
+    enabled: !!user,
+  });
+  const unread = unreadQuery.data ?? 0;
+  const [liveAlert, setLiveAlert] = useState<AppAlert | null>(null);
+  // AC-11.6: una alerta crítica o de atención se muestra en cuanto llega, esté donde esté el usuario.
+  useAlertStream((alert) => {
+    if (alert.severity !== 'INFO') setLiveAlert(alert);
+  });
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(() => pendingTripCount());
   const wasOnline = useRef(online);
@@ -216,11 +233,12 @@ export function AppLayout() {
           <Tooltip title="Notificaciones">
             <IconButton
               color="inherit"
-              aria-label="Ver notificaciones"
+              aria-label={unread > 0 ? `Ver notificaciones, ${unread} sin leer` : 'Ver notificaciones'}
               onClick={() => go('/app/notifications')}
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             >
-              <NotificationsIcon />
+              <Badge badgeContent={unread} color="error" max={99}>
+                <NotificationsIcon />
+              </Badge>
             </IconButton>
           </Tooltip>
           {!desktop && (
@@ -281,6 +299,36 @@ export function AppLayout() {
               </Alert>
             )}
             <Outlet />
+            <Snackbar
+              open={!!liveAlert}
+              onClose={(_, reason) => reason !== 'clickaway' && setLiveAlert(null)}
+              autoHideDuration={liveAlert?.severity === 'CRITICAL' ? null : 8000}
+              anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+              sx={{ top: { xs: BAR_HEIGHT + 8, sm: BAR_HEIGHT + 12 } }}
+            >
+              {liveAlert ? (
+                <Alert
+                  severity={liveAlert.severity === 'CRITICAL' ? 'error' : 'warning'}
+                  variant="filled"
+                  onClose={() => setLiveAlert(null)}
+                  action={
+                    <>
+                      {liveAlert.link && (
+                        <Button color="inherit" size="small" onClick={() => { go(liveAlert.link!); setLiveAlert(null); }}>
+                          Ver
+                        </Button>
+                      )}
+                      <IconButton color="inherit" size="small" aria-label="Cerrar aviso" onClick={() => setLiveAlert(null)}>
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </>
+                  }
+                  sx={{ maxWidth: 560, boxShadow: 6, alignItems: 'center' }}
+                >
+                  <strong>{liveAlert.title}</strong> — {liveAlert.message}
+                </Alert>
+              ) : undefined}
+            </Snackbar>
           </Box>
           {desktop && <Footer compact />}
         </Box>

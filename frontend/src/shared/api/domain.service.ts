@@ -308,13 +308,25 @@ export interface DashboardSummary {
   compliance: ComplianceRow[];
 }
 
-export interface Notification {
+export type AlertType = 'CLOSURE' | 'QUOTA' | 'PERMIT' | 'ZONE' | 'REPORT' | 'SECURITY';
+export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+
+export interface AppAlert {
   id: string;
-  type: 'CLOSURE' | 'PERMIT' | 'TRIP' | 'INFO';
+  type: AlertType;
+  severity: AlertSeverity;
   title: string;
-  body: string;
-  date: string;
-  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  message: string;
+  link?: string;
+  read: boolean;
+  /** RN-22: las críticas no se pueden archivar. */
+  archivable: boolean;
+  createdAt: string;
+}
+
+export interface AlertInbox {
+  unread: number;
+  alerts: AppAlert[];
 }
 
 /** Cuerpo de una faena pendiente de sincronizar (registro offline). */
@@ -636,7 +648,21 @@ export const domainService = {
   async summary(): Promise<DashboardSummary> {
     return (await httpClient.get<DashboardSummary>('/resumen')).data;
   },
-  async notifications(): Promise<Notification[]> {
-    return (await httpClient.get<Notification[]>('/notificaciones')).data;
+  // --- Alertas (RF-11) -------------------------------------------------
+  async alerts(): Promise<AlertInbox> {
+    return (await httpClient.get<AlertInbox>('/alertas')).data;
+  },
+  async unreadAlerts(): Promise<number> {
+    return (await httpClient.get<{ unread: number }>('/alertas/no-leidas')).data.unread;
+  },
+  async markAlertRead(id: string): Promise<AppAlert> {
+    return (await httpClient.patch<AppAlert>(`/alertas/${id}/leida`)).data;
+  },
+  async markAllAlertsRead(): Promise<number> {
+    return (await httpClient.patch<{ unread: number }>('/alertas/leidas')).data.unread;
+  },
+  /** RN-22: el servidor rechaza archivar una alerta crítica. */
+  async archiveAlert(id: string): Promise<void> {
+    await httpClient.delete(`/alertas/${id}`);
   },
 };
