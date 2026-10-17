@@ -12,6 +12,8 @@ public interface PermitRepository extends JpaRepository<PermitEntity, String> {
 
     Optional<PermitEntity> findByNumberIgnoreCase(String number);
 
+    Optional<PermitEntity> findByVerificationCode(String verificationCode);
+
     boolean existsByNumberIgnoreCase(String number);
 
     List<PermitEntity> findAllByOrderByExpiresAtDesc();

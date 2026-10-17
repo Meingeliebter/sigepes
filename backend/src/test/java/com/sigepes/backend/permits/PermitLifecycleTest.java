@@ -1,8 +1,8 @@
 package com.sigepes.backend.permits;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.sigepes.backend.support.ApiTestSupport;
 import com.sigepes.backend.users.Role;
@@ -35,26 +36,74 @@ class PermitLifecycleTest extends ApiTestSupport {
     @Test
     @DisplayName("Una solicitud nace en estado PENDING con constancia verificable")
     void requestsPermit() throws Exception {
-        mockMvc.perform(post("/api/v1/permisos").header("Authorization", fisherToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+        mockMvc.perform(multipart("/api/v1/permisos").header("Authorization", fisherToken)
+                .file(requestPart("""
                         {"type":"Pesca artesanal"}"""))
+                .file(idDocument())
+                .file(vesselOwnershipDocument()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.ownerId").value(fisher.getId()))
                 .andExpect(jsonPath("$.holder").value(fisher.getFullName()))
-                .andExpect(jsonPath("$.verificationCode").isNotEmpty());
+                .andExpect(jsonPath("$.verificationCode").isNotEmpty())
+                .andExpect(jsonPath("$.attachments.length()").value(2));
     }
 
     @Test
     @DisplayName("Un pescador no puede auto-aprobarse el permiso al solicitarlo")
     void cannotSelfApprove() throws Exception {
-        mockMvc.perform(post("/api/v1/permisos").header("Authorization", fisherToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+        mockMvc.perform(multipart("/api/v1/permisos").header("Authorization", fisherToken)
+                .file(requestPart("""
                         {"type":"Pesca artesanal","status":"APPROVED"}"""))
+                .file(idDocument())
+                .file(vesselOwnershipDocument()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("AC-08.5: rechaza la solicitud si faltan los adjuntos obligatorios")
+    void requiresAttachments() throws Exception {
+        mockMvc.perform(multipart("/api/v1/permisos").header("Authorization", fisherToken)
+                .file(requestPart("""
+                        {"type":"Pesca artesanal"}""")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PERMIT_ATTACHMENTS_REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("AC-08.5: el titular puede descargar sus adjuntos, otro pescador no")
+    void downloadsAttachmentOnlyAsOwnerOrAuthority() throws Exception {
+        String response = mockMvc.perform(multipart("/api/v1/permisos").header("Authorization", fisherToken)
+                .file(requestPart("""
+                        {"type":"Pesca artesanal"}"""))
+                .file(idDocument())
+                .file(vesselOwnershipDocument()))
+                .andReturn().getResponse().getContentAsString();
+        String permitId = extract(response, "id");
+
+        mockMvc.perform(get("/api/v1/permisos/" + permitId + "/adjuntos/ID_COPY")
+                .header("Authorization", fisherToken))
+                .andExpect(status().isOk());
+
+        String otherToken = bearerFor(
+                givenUser("6060606060", "otro.solicitante@sigepes.gov.co", Role.FISHER).getEmail());
+        mockMvc.perform(get("/api/v1/permisos/" + permitId + "/adjuntos/ID_COPY")
+                .header("Authorization", otherToken))
+                .andExpect(status().isForbidden());
+    }
+
+    private static MockMultipartFile requestPart(String json) {
+        return new MockMultipartFile("request", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes());
+    }
+
+    private static MockMultipartFile idDocument() {
+        return new MockMultipartFile("idDocument", "cedula.pdf", "application/pdf", "PDF".getBytes());
+    }
+
+    private static MockMultipartFile vesselOwnershipDocument() {
+        return new MockMultipartFile("vesselOwnershipDocument", "propiedad.pdf", "application/pdf",
+                "PDF".getBytes());
     }
 
     @Test
@@ -154,6 +203,17 @@ class PermitLifecycleTest extends ApiTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.number").value("PES-LC-7"))
                 .andExpect(jsonPath("$.status").value("APPROVED"));
+    }
+
+    @Test
+    @DisplayName("AC-08.2: clasifica la urgencia de la alerta según los días restantes")
+    void classifiesExpiryAlertSeverity() throws Exception {
+        String permitId = givenPermit(fisher, "PES-LC-10", PermitStatus.APPROVED, LocalDate.now().minusMonths(6),
+                LocalDate.now().plusDays(3)).getId();
+
+        mockMvc.perform(get("/api/v1/notificaciones").header("Authorization", fisherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id=='permit-" + permitId + "')].severity").value("CRITICAL"));
     }
 
     @Test

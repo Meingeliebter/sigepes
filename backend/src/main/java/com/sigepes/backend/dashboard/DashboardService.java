@@ -136,16 +136,26 @@ public class DashboardService {
                     "CLOSURE",
                     "Veda vigente: " + closure.getSpecies().getCommonName(),
                     "Restricción en " + closure.getZone() + " hasta el " + DAY.format(closure.getEndDate()) + ".",
-                    DAY.format(closure.getStartDate())));
+                    DAY.format(closure.getStartDate()),
+                    "WARNING"));
         }
 
+        // AC-08.2: un permiso puede cruzar varios umbrales a la vez (p. ej. 30 y 15); solo se avisa
+        // con el más urgente para no duplicar la alerta.
         for (PermitEntity permit : permitService.expiringSoon(actor.isAuthority() ? null : actor.id())) {
+            Integer tier = permitService.tierFor(permit, today);
+            if (tier == null) {
+                continue;
+            }
+            long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, permit.getExpiresAt());
             notifications.add(new NotificationResponse(
                     "permit-" + permit.getId(),
                     "PERMIT",
                     "Permiso próximo a vencer",
-                    "El permiso " + permit.getNumber() + " vence el " + DAY.format(permit.getExpiresAt()) + ".",
-                    DAY.format(today)));
+                    "El permiso " + permit.getNumber() + " vence en " + daysLeft + " día(s) (el "
+                            + DAY.format(permit.getExpiresAt()) + ") — alerta de " + tier + " días.",
+                    DAY.format(today),
+                    severityForTier(tier)));
         }
 
         // AC-20.5: alerta de seguridad por IP con fallos de login recientes, solo visible para ADMIN.
@@ -157,15 +167,24 @@ public class DashboardService {
                         "Posible ataque de fuerza bruta",
                         ip.getFailures() + " intentos de inicio de sesión fallidos desde " + ip.getIpAddress()
                                 + " en los últimos " + auditService.bruteForceWindowMinutes() + " minutos.",
-                        DAY.format(today)));
+                        DAY.format(today),
+                        "CRITICAL"));
             }
         }
 
         if (notifications.isEmpty()) {
             notifications.add(new NotificationResponse("empty", "INFO", "Sin novedades",
-                    "No hay vedas vigentes ni permisos próximos a vencer.", DAY.format(today)));
+                    "No hay vedas vigentes ni permisos próximos a vencer.", DAY.format(today), "INFO"));
         }
         return notifications;
+    }
+
+    /** AC-08.2: 5 días es crítico, 15 es advertencia, 30 (o cualquier umbral mayor) es informativo. */
+    private static String severityForTier(int tier) {
+        if (tier <= 5) {
+            return "CRITICAL";
+        }
+        return tier <= 15 ? "WARNING" : "INFO";
     }
 
     private List<ActivityResponse> recentActivity(String ownerId) {

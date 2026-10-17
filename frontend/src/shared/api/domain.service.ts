@@ -49,6 +49,12 @@ export interface Closure {
 
 export type PermitStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'EXPIRED';
 
+export interface PermitAttachment {
+  kind: 'ID_COPY' | 'VESSEL_OWNERSHIP';
+  originalFilename: string;
+  contentType: string;
+}
+
 export interface Permit {
   id: string;
   number: string;
@@ -62,6 +68,7 @@ export interface Permit {
   verificationCode?: string;
   expiringSoon?: boolean;
   daysToExpire?: number;
+  attachments: PermitAttachment[];
 }
 
 export interface Capture {
@@ -159,6 +166,7 @@ export interface Notification {
   title: string;
   body: string;
   date: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
 }
 
 /** Cuerpo de una faena pendiente de sincronizar (registro offline). */
@@ -216,8 +224,17 @@ export const domainService = {
   async permits(): Promise<Permit[]> {
     return (await httpClient.get<Permit[]>('/permisos')).data;
   },
-  async createPermit(payload: { type: string; issued?: string; expires?: string }): Promise<Permit> {
-    return (await httpClient.post<Permit>('/permisos', payload)).data;
+  /** AC-08.5: la copia de cédula y el certificado de propiedad son obligatorios. */
+  async createPermit(
+    payload: { type: string; issued?: string; expires?: string },
+    idDocument: File,
+    vesselOwnershipDocument: File,
+  ): Promise<Permit> {
+    const form = new FormData();
+    form.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    form.append('idDocument', idDocument);
+    form.append('vesselOwnershipDocument', vesselOwnershipDocument);
+    return (await httpClient.post<Permit>('/permisos', form)).data;
   },
   async evaluatePermit(
     permitId: string,
@@ -225,6 +242,25 @@ export const domainService = {
     reason?: string,
   ): Promise<Permit> {
     return (await httpClient.patch<Permit>(`/permisos/${permitId}/evaluar`, { status, reason })).data;
+  },
+  /** AC-08.4: verifica un permiso por número o por el código escaneado en su QR. */
+  async validatePermit(numberOrCode: string): Promise<Permit> {
+    return (await httpClient.get<Permit>(`/permisos/validar/${encodeURIComponent(numberOrCode)}`)).data;
+  },
+  /**
+   * AC-08.5: descarga un adjunto. El endpoint exige el token (como todo `/api/**`), así que no se
+   * puede usar un `<a href>` plano — se trae como blob y se dispara la descarga en el navegador.
+   */
+  async downloadAttachment(permitId: string, kind: PermitAttachment['kind'], filename: string): Promise<void> {
+    const response = await httpClient.get(`/permisos/${permitId}/adjuntos/${kind}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(response.data as Blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   // --- Faenas y capturas (RF-03) --------------------------------------

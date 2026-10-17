@@ -128,6 +128,22 @@ public class PermitEntity {
                 && !expiresAt.isAfter(today.plusDays(days));
     }
 
+    /**
+     * AC-08.2: el umbral de alerta más urgente que este permiso ya cruzó (p. ej. 5, 15 o 30 días),
+     * o {@code null} si todavía no entra en ninguno. {@code tiersDesc} debe venir ordenado de mayor
+     * a menor; se recorre de menos a más urgente y cada umbral cruzado sobrescribe al anterior, así
+     * que el resultado final es siempre el más pequeño (el más urgente) que aplica.
+     */
+    public Integer mostUrgentTier(LocalDate today, int[] tiersDesc) {
+        Integer tier = null;
+        for (int candidate : tiersDesc) {
+            if (isExpiringSoon(today, candidate)) {
+                tier = candidate;
+            }
+        }
+        return tier;
+    }
+
     public String getId() {
         return id;
     }
