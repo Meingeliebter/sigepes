@@ -31,3 +31,24 @@ function subscribe(listener: () => void) {
 export function useGoogleMapsAuthFailed(): boolean {
   return useSyncExternalStore(subscribe, () => failed, () => false);
 }
+
+// --- Teselas de mapa base (OpenStreetMap/Esri) -------------------------------------------------
+
+let tilesUnavailable = false;
+const tileListeners = new Set<() => void>();
+
+/** Las teselas del mapa base no cargan (red que las bloquea): se usa el esquema sin conexión. */
+export function markTilesUnavailable(): void {
+  if (tilesUnavailable) return;
+  tilesUnavailable = true;
+  tileListeners.forEach((listener) => listener());
+}
+
+function subscribeTiles(listener: () => void) {
+  tileListeners.add(listener);
+  return () => tileListeners.delete(listener);
+}
+
+export function useTilesUnavailable(): boolean {
+  return useSyncExternalStore(subscribeTiles, () => tilesUnavailable, () => false);
+}

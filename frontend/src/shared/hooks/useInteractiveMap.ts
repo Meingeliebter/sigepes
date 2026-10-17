@@ -1,14 +1,21 @@
-import { useGoogleMapsAuthFailed } from '../components/map/mapsAuth';
+import { useGoogleMapsAuthFailed, useTilesUnavailable } from '../components/map/mapsAuth';
 import { useOnlineStatus } from './useOnlineStatus';
 
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-/**
- * El mapa admite clic para elegir coordenadas: requiere Google Maps (clave configurada y válida, y
- * señal). En cualquier otro caso se muestra el esquema sin conexión, que no es interactivo.
- */
-export function useInteractiveMap(): boolean {
+/** Qué mapa se muestra: Google (si hay clave válida), OpenStreetMap con Leaflet o el esquema sin conexión. */
+export type MapMode = 'google' | 'leaflet' | 'schematic';
+
+export function useMapMode(): MapMode {
   const online = useOnlineStatus();
   const authFailed = useGoogleMapsAuthFailed();
-  return !!GOOGLE_MAPS_API_KEY && online && !authFailed;
+  const tilesUnavailable = useTilesUnavailable();
+  if (!online) return 'schematic';
+  if (GOOGLE_MAPS_API_KEY && !authFailed) return 'google';
+  return tilesUnavailable ? 'schematic' : 'leaflet';
+}
+
+/** El mapa admite clic para elegir coordenadas: con cartografía real (Google o Leaflet), no con el esquema. */
+export function useInteractiveMap(): boolean {
+  return useMapMode() !== 'schematic';
 }

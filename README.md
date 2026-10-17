@@ -111,7 +111,8 @@ repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Railway](https://railway
 
    Opcional, mapa de Google: crea en Google Cloud una clave de navegador de *Maps JavaScript API*
    restringida a `*.vercel.app` y guárdala con `gh secret set GOOGLE_MAPS_API_KEY`. Sin ella la app
-   usa el mapa esquemático.
+   usa OpenStreetMap (Leaflet) con capas de mapa, satélite y relieve; el esquema propio queda solo
+   para cuando no hay conexión.
 4. **Primer despliegue.** *Actions → Deploy → Run workflow*, o simplemente fusiona a `main`.
 5. **Protección de `main`.** En *Settings → Branches* exige los checks `Backend (Spring Boot)`,
    `Frontend (React + Vite)` e `Imágenes Docker`: un pipeline en rojo bloquea el merge (AC-21.1).
