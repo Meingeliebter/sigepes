@@ -1,7 +1,17 @@
-# HU-21 · AC-21.2 / AC-21.6 — Despliegue continuo.
-# Solo corre cuando CI terminó en verde sobre main. Dispara los "deploy hooks" de la plataforma
-# (Render para la API; Vercel/Netlify despliegan el frontend desde su propia integración con Git).
-# Los hooks son secretos del repositorio: nunca se escriben en el código (AC-21.4).
+# HU-21 · AC-21.2 / AC-21.6 — Despliegue continuo a producción.
+#
+# Corre solo cuando el CI de main terminó en verde (o a mano desde Actions → Deploy → Run workflow):
+#   1. API en Railway: sube el commit exacto, Railway construye el contenedor con backend/Dockerfile y
+#      lo activa solo si /actuator/health responde (backend/railway.json); aquí se espera ese UP.
+#   2. Frontend en Vercel: compila con la URL de la API y publica en producción.
+#   3. Prueba de humo: la web responde y la API acepta peticiones desde el dominio de Vercel (CORS).
+#
+# Secretos (Settings → Secrets and variables → Actions), nunca en el código (AC-21.4):
+#   RAILWAY_TOKEN · VERCEL_TOKEN · VERCEL_ORG_ID · VERCEL_PROJECT_ID · GOOGLE_MAPS_API_KEY (opcional)
+# Variables:
+#   API_URL            p. ej. https://sigepes-api-production.up.railway.app
+#   FRONTEND_URL       p. ej. https://sigepes.vercel.app
+#   RAILWAY_SERVICE    nombre del servicio de la API en Railway (por defecto sigepes-api)
 name: Deploy
 
 on:
@@ -9,23 +19,52 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  VERCEL_CLI: vercel@62.2.0
+  RAILWAY_CLI: "@railway/cli@5.63.1"
+  DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
-  deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  api:
+    name: API (Railway)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
-      - name: Desplegar API
-        env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      - name: Comprobar configuración
+        id: config
         run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_DEPLOY_HOOK_URL no está configurado; se omite el despliegue de la API."
-            exit 0
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::warning::RAILWAY_TOKEN no está configurado; se omite el despliegue de la API."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
-          curl -fsS -X POST "$HOOK"
+      - uses: actions/checkout@v4
+        if: steps.config.outputs.ready == 'true'
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+      - uses: actions/setup-node@v4
+        if: steps.config.outputs.ready == 'true'
+        with:
+          node-version: '22'
+      - name: Desplegar el commit en Railway
+        if: steps.config.outputs.ready == 'true'
+        env:
+          SERVICE: ${{ vars.RAILWAY_SERVICE || 'sigepes-api' }}
+        run: |
+          # --ci: muestra el log de construcción y termina cuando Railway acaba de construir la imagen.
+          npx --yes "$RAILWAY_CLI" up backend --path-as-root --service "$SERVICE" --ci
       - name: Esperar health check
+        if: steps.config.outputs.ready == 'true'
         env:
           API_URL: ${{ vars.API_URL }}
         run: |
@@ -33,11 +72,75 @@ jobs:
             echo "::warning::La variable API_URL no está configurada; no se verifica el health check."
             exit 0
           fi
-          for i in $(seq 1 30); do
-            if curl -fsS "$API_URL/actuator/health" | grep -q '"UP"'; then
+          for _ in $(seq 1 60); do
+            if curl -fsS --max-time 20 "$API_URL/actuator/health" | grep -q '"UP"'; then
               echo "API saludable"; exit 0
             fi
             sleep 10
           done
-          echo "::error::La API no respondió UP en 5 minutos; revisa el despliegue o haz rollback."
+          echo "::error::La API no respondió UP en 10 minutos; revisa los logs en Railway o haz rollback (README → Despliegue)."
           exit 1
+
+  web:
+    name: Frontend (Vercel)
+    needs: [api]
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Comprobar configuración
+        id: config
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning::Faltan VERCEL_TOKEN, VERCEL_ORG_ID o VERCEL_PROJECT_ID; se omite el despliegue del frontend."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.config.outputs.ready == 'true'
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+      - uses: actions/setup-node@v4
+        if: steps.config.outputs.ready == 'true'
+        with:
+          node-version: '22'
+      - name: Compilar para producción
+        if: steps.config.outputs.ready == 'true'
+        env:
+          VITE_API_BASE_URL: ${{ vars.API_URL && format('{0}/api/v1', vars.API_URL) || '/api/v1' }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          VITE_GOOGLE_MAPS_MAP_ID: ${{ vars.GOOGLE_MAPS_MAP_ID }}
+        run: |
+          npx --yes "$VERCEL_CLI" pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --yes "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+      - name: Publicar en producción
+        if: steps.config.outputs.ready == 'true'
+        id: deploy
+        run: |
+          url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Frontend publicado: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Prueba de humo
+        if: steps.config.outputs.ready == 'true'
+        env:
+          API_URL: ${{ vars.API_URL }}
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          site="${FRONTEND_URL:-$DEPLOY_URL}"
+          curl -fsS --max-time 30 "$site" | grep -q 'id="root"' && echo "Web responde: $site"
+          curl -fsS --max-time 30 "$site/verificar" | grep -q 'id="root"' && echo "Rutas de la SPA responden"
+          if [ -n "$API_URL" ] && [ -n "$FRONTEND_URL" ]; then
+            allowed=$(curl -fsS -o /dev/null -D - -X OPTIONS "$API_URL/api/v1/auth/login" \
+              -H "Origin: $FRONTEND_URL" -H "Access-Control-Request-Method: POST" | tr -d '\r' \
+              | grep -i '^access-control-allow-origin:' || true)
+            if [ -z "$allowed" ]; then
+              echo "::error::La API no acepta peticiones desde $FRONTEND_URL. Revisa FRONTEND_URL en las variables de sigepes-api en Railway."
+              exit 1
+            fi
+            echo "CORS correcto: $allowed"
+          fi

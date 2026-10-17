@@ -83,7 +83,9 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigins));
+        // Patrones: además del dominio de producción admite comodines como https://sigepes-*.vercel.app,
+        // para las vistas previas de cada pull request. La API usa token Bearer, no cookies.
+        configuration.setAllowedOriginPatterns(List.of(allowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         // Content-Disposition: el frontend lee el nombre del archivo exportado (RF-15, RF-18).

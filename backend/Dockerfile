@@ -13,15 +13,16 @@ RUN mvn -B -q clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# No se ejecuta como root.
-RUN addgroup -S sigepes && adduser -S sigepes -G sigepes
+# La JVM no se ejecuta como root: docker-entrypoint.sh prepara el volumen y baja al usuario sigepes.
+RUN addgroup -S sigepes && adduser -S sigepes -G sigepes && apk add --no-cache su-exec
 COPY --from=build /build/target/backend-*.jar app.jar
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # AC-15.6: punto de montaje del disco persistente para los archivos subidos.
-RUN mkdir -p /var/data/uploads && chown -R sigepes:sigepes /var/data
-USER sigepes
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh && mkdir -p /var/data/uploads && chown -R sigepes:sigepes /var/data
 
 EXPOSE 8080
-# AC-21.3: el orquestador reinicia el contenedor cuando el health check falla.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3     CMD wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '"UP"' || exit 1
+# AC-21.3: el orquestador reinicia el contenedor cuando el health check falla. PORT lo asigna la
+# plataforma (Railway); en local y en docker compose es 8080.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3     CMD wget -qO- "http://127.0.0.1:${PORT:-8080}/actuator/health" | grep -q '"UP"' || exit 1
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

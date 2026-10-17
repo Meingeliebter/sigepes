@@ -66,3 +66,30 @@ jobs:
         run: docker build -t sigepes-backend:ci backend
       - name: Imagen del frontend
         run: docker build -t sigepes-frontend:ci frontend
+
+  # AC-21.2 / AC-21.6: cada versión de main queda publicada como imagen inmutable (etiqueta = commit)
+  # en GitHub Container Registry; sirve para docker compose y para volver a una versión anterior.
+  publish:
+    name: Publicar imágenes (GHCR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [docker]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Construir y publicar
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          for app in backend frontend; do
+            image="ghcr.io/$owner/sigepes-$app"
+            docker build -t "$image:${{ github.sha }}" -t "$image:latest" "$app"
+            docker push "$image:${{ github.sha }}"
+            docker push "$image:latest"
+          done
