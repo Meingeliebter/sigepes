@@ -1,7 +1,65 @@
 html, body, #root { min-height: 100%; margin: 0; }
-body { background: #F6F8FA; color: #152935; }
 * { box-sizing: border-box; }
 a { color: inherit; }
+
+/*
+ * Campo marino: la "carta náutica" sobre la que flotan todos los paneles de vidrio.
+ * Capa 1 (body): agua clara de bajamar, de turquesa pálido a laguna.
+ * Capa 2 (::before): isobatas (curvas de profundidad) de /images/isobaths.svg.
+ * Capa 3 (::after): reflejo de luz que deriva muy despacio, como la cáustica del sol en el agua.
+ */
+body {
+  color: #0F2433;
+  background-color: #EEF7F7;
+  background-image:
+    radial-gradient(120% 80% at 0% 0%, #F7FCFC 0%, rgba(247, 252, 252, 0) 55%),
+    linear-gradient(170deg, #EEF7F7 0%, #DCEFF1 40%, #C4E3E8 75%, #B3D9DF 100%);
+  background-attachment: fixed;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::before {
+  background: url('/images/isobaths.svg') center / cover no-repeat;
+  opacity: 0.9;
+}
+
+body::after {
+  background:
+    radial-gradient(40% 32% at 78% 18%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(34% 28% at 18% 82%, rgba(79, 168, 174, 0.22), transparent 70%);
+  animation: sea-light 38s cubic-bezier(.45, 0, .55, 1) infinite alternate;
+}
+
+@keyframes sea-light {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(3%, 2%, 0) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
+
+/* Sin desenfoque disponible o con transparencia reducida: el vidrio se vuelve casi opaco. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .MuiCard-root, .MuiPaper-outlined { background-color: rgba(255, 255, 255, 0.94) !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .MuiCard-root, .MuiPaper-outlined, .MuiDrawer-paper, .MuiDialog-paper {
+    background-color: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: none !important;
+  }
+  .MuiAppBar-root { background-color: #071E30 !important; }
+}
 
 /* Utilidad reusada por MuiCssBaseline (ver theme.ts) para el enlace "saltar al contenido". */
 .skip-link {
@@ -12,4 +70,17 @@ a { color: inherit; }
 }
 .skip-link:focus { top: 8px; }
 
+/* Superficies del navegador: también pertenecen al sistema. */
 ::selection { background: #0E7C86; color: #ffffff; }
+input, textarea { caret-color: #0E7C86; }
+html { scrollbar-color: rgba(11, 59, 92, 0.35) transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(11, 59, 92, 0.3);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(11, 59, 92, 0.5); }
+a { text-underline-offset: 3px; }

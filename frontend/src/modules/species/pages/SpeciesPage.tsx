@@ -4,8 +4,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import HistoryIcon from '@mui/icons-material/History';
 import PhishingIcon from '@mui/icons-material/Phishing';
 import SearchIcon from '@mui/icons-material/Search';
+import SetMealIcon from '@mui/icons-material/SetMeal';
 import {
-  Alert, Button, Card, CardContent, CardMedia, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
+  Alert, Box, Button, Card, CardContent, CardMedia, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, Grid, IconButton, InputAdornment, MenuItem, Stack, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
@@ -32,6 +33,61 @@ const MEASUREMENT_LABEL: Record<string, string> = {
   TOTAL_LENGTH: 'Longitud total',
   FORK_LENGTH: 'Longitud a la horquilla',
 };
+
+/** Las imágenes de relleno del sembrado (placehold.co) no aportan nada: se sustituyen por la regla de talla. */
+const isPlaceholderImage = (url?: string) => !url || /placehold\.co|via\.placeholder/i.test(url);
+
+/**
+ * Imagen de la especie o, si no hay una real, una regla de medición con la talla mínima legal
+ * marcada: lo que de verdad importa en campo es si la captura alcanza esa medida.
+ */
+function SpeciesVisual({ species }: { species: Species }) {
+  const [failed, setFailed] = useState(false);
+  if (!failed && !isPlaceholderImage(species.imageUrl)) {
+    return <CardMedia component="img" height="140" image={species.imageUrl} alt={species.commonName} onError={() => setFailed(true)} />;
+  }
+  const size = Number(species.minSizeCm) || 0;
+  const scale = Math.max(60, Math.ceil((size * 1.4) / 10) * 10);
+  const mark = Math.min(100, (size / scale) * 100);
+  return (
+    <Box
+      role="img"
+      aria-label={`${species.commonName}: talla mínima legal ${species.minSizeCm} cm`}
+      sx={{
+        height: 140,
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg, rgba(14,124,134,.14), rgba(11,59,92,.10)), url(/images/isobaths.svg) center / 260% no-repeat',
+        borderBottom: '1px solid rgba(11,59,92,.10)',
+      }}
+    >
+      <SetMealIcon sx={{ position: 'absolute', top: 18, left: `calc(${mark}% - 56px)`, fontSize: 64, color: 'rgba(11,59,92,.55)', transform: 'scaleX(-1)' }} />
+      <Box sx={{ position: 'absolute', left: 12, right: 12, bottom: 14, height: 30 }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '6px',
+            bgcolor: 'rgba(255,255,255,.72)',
+            boxShadow: 'inset 0 0 0 1px rgba(11,59,92,.18)',
+            backgroundImage:
+              'repeating-linear-gradient(90deg, rgba(11,59,92,.45) 0 1px, transparent 1px 10%), repeating-linear-gradient(90deg, rgba(11,59,92,.25) 0 1px, transparent 1px 2%)',
+            backgroundSize: '100% 12px, 100% 6px',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        <Box sx={{ position: 'absolute', left: 0, width: `${mark}%`, top: 0, bottom: 0, borderRadius: '6px 0 0 6px', bgcolor: 'rgba(14,124,134,.18)' }} />
+        <Box sx={{ position: 'absolute', left: `${mark}%`, top: -6, bottom: -2, width: 2, bgcolor: 'secondary.main' }} />
+        <Typography
+          variant="caption"
+          sx={{ position: 'absolute', right: 8, bottom: 3, fontWeight: 800, color: 'secondary.dark', lineHeight: 1.2 }}
+        >
+          mín. {species.minSizeCm} cm
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
 const EMPTY_FORM = {
   commonName: '',
@@ -167,7 +223,7 @@ export function SpeciesPage() {
         {filtered.map((sp) => (
           <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={sp.id}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {sp.imageUrl && <CardMedia component="img" height="140" image={sp.imageUrl} alt={sp.commonName} />}
+              <SpeciesVisual species={sp} />
               <CardContent sx={{ flex: 1 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                   <Typography variant="h6">{sp.commonName}</Typography>

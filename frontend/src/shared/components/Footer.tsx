@@ -6,6 +6,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import XIcon from '@mui/icons-material/Close';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import { Box, Divider, IconButton, Link, Stack, Tooltip, Typography } from '@mui/material';
+import { glass } from '../theme/theme';
 import { Logotype } from './Logotype';
 
 const SITE_LINKS = [
@@ -42,7 +43,7 @@ export function Footer({ compact = false }: FooterProps) {
 
   if (compact) {
     return (
-      <Box component="footer" sx={{ bgcolor: '#071E30', color: 'rgba(255,255,255,.75)', px: 2, py: 1.5 }}>
+      <Box component="footer" sx={{ ...glass.smoked, borderBottom: 'none', color: 'rgba(255,255,255,.78)', px: 2, py: 1.5 }}>
         <Typography variant="caption" display="block" textAlign="center">
           © {year} SIGEPES · Proyecto académico — Universidad Manuela Beltrán
         </Typography>
@@ -51,7 +52,16 @@ export function Footer({ compact = false }: FooterProps) {
   }
 
   return (
-    <Box component="footer" sx={{ bgcolor: '#071E30', color: 'rgba(255,255,255,.82)' }}>
+    <Box
+      component="footer"
+      sx={{
+        ...glass.smoked,
+        backgroundColor: 'rgba(6,25,42,0.86)',
+        borderBottom: 'none',
+        borderTop: '1px solid rgba(255,255,255,.14)',
+        color: 'rgba(255,255,255,.82)',
+      }}
+    >
       <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 3, md: 4 }, py: { xs: 5, md: 6 } }}>
         <Box
           sx={{
@@ -86,7 +96,7 @@ export function Footer({ compact = false }: FooterProps) {
           </Stack>
 
           <Stack spacing={1.25} id="mapa-del-sitio">
-            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,.55)' }}>
+            <Typography variant="subtitle2" component="h2" sx={{ color: '#fff', mb: 0.5 }}>
               Mapa del sitio
             </Typography>
             {SITE_LINKS.map((link) => (
@@ -97,7 +107,7 @@ export function Footer({ compact = false }: FooterProps) {
           </Stack>
 
           <Stack spacing={1.25}>
-            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,.55)' }}>
+            <Typography variant="subtitle2" component="h2" sx={{ color: '#fff', mb: 0.5 }}>
               Normatividad y transparencia
             </Typography>
             {LEGAL_LINKS.map((link) => (
@@ -108,7 +118,7 @@ export function Footer({ compact = false }: FooterProps) {
           </Stack>
 
           <Stack spacing={1.5}>
-            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,.55)' }}>
+            <Typography variant="subtitle2" component="h2" sx={{ color: '#fff', mb: 0.5 }}>
               Atención al ciudadano
             </Typography>
             <Stack direction="row" spacing={1.25} alignItems="flex-start">

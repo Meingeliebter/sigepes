@@ -16,10 +16,11 @@ export function DashboardPage() {
 
   return (
     <Stack spacing={3}>
-      <Box sx={{ pl: 2, borderLeft: '4px solid', borderColor: 'secondary.main' }}>
-        <Typography variant="overline" color="secondary.dark">Panel institucional</Typography>
-        <Typography variant="h4">Hola, {summary?.fullName ?? user?.fullName ?? 'usuario'}</Typography>
-        <Typography color="text.secondary">Resumen operativo de SIGEPES</Typography>
+      <Box>
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' } }}>
+          Hola, {summary?.fullName ?? user?.fullName ?? 'usuario'}
+        </Typography>
+        <Typography color="text.secondary" sx={{ mt: 0.5 }}>Resumen operativo de SIGEPES</Typography>
       </Box>
 
       {summaryQuery.isLoading && <CircularProgress size={28} />}

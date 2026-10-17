@@ -19,7 +19,7 @@ export function TopUtilityBar() {
     <Box
       sx={{
         display: { xs: 'none', md: 'block' },
-        bgcolor: '#071E30',
+        bgcolor: '#06192A',
         color: 'rgba(255,255,255,0.85)',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}

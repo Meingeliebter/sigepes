@@ -1,13 +1,14 @@
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import GavelIcon from '@mui/icons-material/Gavel';
 import PublicIcon from '@mui/icons-material/Public';
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import type { PropsWithChildren } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Footer } from '../../../shared/components/Footer';
 import { Logotype } from '../../../shared/components/Logotype';
 import { SkipLink } from '../../../shared/components/SkipLink';
 import { TopUtilityBar } from '../../../shared/components/TopUtilityBar';
+import { glass } from '../../../shared/theme/theme';
 
 const HIGHLIGHTS = [
   { icon: <VerifiedUserIcon fontSize="small" />, text: 'Formalización de pescadores artesanales ante la autoridad competente' },
@@ -15,9 +16,14 @@ const HIGHLIGHTS = [
   { icon: <PublicIcon fontSize="small" />, text: 'Alineado con la Ley 13 de 1990, la Ley 1851 de 2017 y el ODS 14' },
 ];
 
+/**
+ * Acceso institucional: la captura sobre hielo ocupa toda la pantalla y el formulario flota
+ * encima como un panel de vidrio esmerilado, de modo que el objeto que el sistema regula
+ * (el pescado, su talla, su legalidad) está siempre presente detrás del trámite.
+ */
 export function AuthShell({ children }: PropsWithChildren) {
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <SkipLink />
       <TopUtilityBar />
 
@@ -26,44 +32,47 @@ export function AuthShell({ children }: PropsWithChildren) {
         id="main-content"
         sx={{
           flex: 1,
+          position: 'relative',
+          isolation: 'isolate',
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '1.1fr 1fr' },
+          gridTemplateColumns: { xs: '1fr', md: '1.05fr minmax(420px, 1fr)' },
+          alignItems: 'center',
+          gap: { md: 6 },
+          px: { xs: 2, sm: 4, md: 8 },
+          py: { xs: 4, md: 8 },
+          backgroundImage: {
+            xs: 'linear-gradient(180deg, rgba(7,30,48,.55) 0%, rgba(7,30,48,.35) 100%), url(/images/auth-pescado.jpg)',
+            md: 'linear-gradient(100deg, rgba(7,30,48,.92) 0%, rgba(7,30,48,.72) 38%, rgba(7,30,48,.15) 70%, rgba(7,30,48,.05) 100%), url(/images/auth-pescado.jpg)',
+          },
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
-        {/* Panel institucional — oculto en móvil para priorizar el formulario */}
-        <Box
-          sx={{
-            display: { xs: 'none', md: 'flex' },
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            color: '#fff',
-            px: 6,
-            py: 6,
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundImage:
-              'linear-gradient(180deg, rgba(7,30,48,.92) 0%, rgba(7,30,48,.82) 45%, rgba(7,30,48,.95) 100%), url(/images/auth-pescado.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+        {/* Mensaje institucional — oculto en móvil para priorizar el formulario */}
+        <Stack
+          spacing={4}
+          sx={{ display: { xs: 'none', md: 'flex' }, color: '#fff', maxWidth: 520, alignSelf: 'stretch', justifyContent: 'space-between' }}
         >
-          <RouterLink to="/" aria-label="Ir a la página de inicio de SIGEPES">
+          <RouterLink to="/" aria-label="Ir a la página de inicio de SIGEPES" style={{ alignSelf: 'flex-start', textDecoration: 'none' }}>
             <Logotype variant="light" />
           </RouterLink>
 
-          <Stack spacing={3} sx={{ maxWidth: 460 }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+          <Stack spacing={3}>
+            <Typography variant="h3" component="p" sx={{ fontSize: '2.5rem', lineHeight: 1.1, textWrap: 'balance' }}>
               Gestión pesquera legal y sostenible
             </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.75)' }}>
+            <Typography sx={{ color: 'rgba(255,255,255,.82)', fontSize: '1.0625rem', maxWidth: 460 }}>
               Portal institucional para el registro, control y trazabilidad de la actividad
               pesquera artesanal e industrial en Colombia.
             </Typography>
-            <Stack spacing={1.75}>
+            <Stack
+              spacing={1.75}
+              sx={{ ...glass.smoked, borderBottom: 'none', border: '1px solid rgba(255,255,255,.14)', borderRadius: '16px', p: 2.5 }}
+            >
               {HIGHLIGHTS.map((item) => (
                 <Stack key={item.text} direction="row" spacing={1.5} alignItems="flex-start">
-                  <Box sx={{ color: 'secondary.light', mt: 0.25 }}>{item.icon}</Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.85)' }}>
+                  <Box sx={{ color: 'secondary.light', mt: 0.25, display: 'flex' }}>{item.icon}</Box>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.9)' }}>
                     {item.text}
                   </Typography>
                 </Stack>
@@ -71,25 +80,30 @@ export function AuthShell({ children }: PropsWithChildren) {
             </Stack>
           </Stack>
 
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,.55)' }}>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,.6)' }}>
             Foto: Tapan Kumar Choudhury / Unsplash
           </Typography>
-        </Box>
+        </Stack>
 
         {/* Panel del formulario */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: { xs: 3, sm: 5 } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifySelf: { md: 'center' }, width: '100%' }}>
           <Box sx={{ display: { xs: 'flex', md: 'none' }, justifyContent: 'center', mb: 3 }}>
-            <RouterLink to="/">
-              <Logotype />
+            <RouterLink to="/" aria-label="Ir a la página de inicio de SIGEPES" style={{ textDecoration: 'none' }}>
+              <Logotype variant="light" />
             </RouterLink>
           </Box>
-          <Paper
+          <Box
             component="section"
-            variant="outlined"
-            sx={{ width: '100%', maxWidth: 440, p: { xs: 3, sm: 4.5 } }}
+            sx={{
+              ...glass.paneStrong,
+              width: '100%',
+              maxWidth: 460,
+              p: { xs: 3, sm: 5 },
+              borderRadius: '24px',
+            }}
           >
             {children}
-          </Paper>
+          </Box>
         </Box>
       </Box>
 

@@ -1,7 +1,7 @@
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { Breadcrumbs, Link, Typography } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { NAV_ITEMS } from '../permissions/navigation';
+import { matchNavItem } from '../permissions/navigation';
 
 /** Segundo nivel de una ruta que no tiene su propio ítem de navegación (p. ej. "Nueva faena"). */
 const SUB_LABELS: Record<string, string> = {
@@ -14,7 +14,7 @@ const SUB_LABELS: Record<string, string> = {
  */
 export function AppBreadcrumbs() {
   const location = useLocation();
-  const current = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path));
+  const current = matchNavItem(location.pathname);
   const subLabel = SUB_LABELS[location.pathname];
 
   if (!current) return null;
@@ -24,17 +24,16 @@ export function AppBreadcrumbs() {
       <Link component={RouterLink} to="/app/dashboard" underline="hover" color="text.secondary" variant="body2">
         Inicio
       </Link>
-      {subLabel ? (
-        <>
-          <Link component={RouterLink} to={current.path} underline="hover" color="text.secondary" variant="body2">
-            {current.label}
-          </Link>
-          <Typography variant="body2" color="text.primary" fontWeight={600}>
-            {subLabel}
-          </Typography>
-        </>
-      ) : (
-        <Typography variant="body2" color="text.primary" fontWeight={600}>
+      {/* Breadcrumbs cuenta cada hijo directo como una miga: un Fragment juntaría dos en una. */}
+      {subLabel ? [
+        <Link key="parent" component={RouterLink} to={current.path} underline="hover" color="text.secondary" variant="body2">
+          {current.label}
+        </Link>,
+        <Typography key="current" variant="body2" color="text.primary" fontWeight={600} aria-current="page">
+          {subLabel}
+        </Typography>,
+      ] : (
+        <Typography variant="body2" color="text.primary" fontWeight={600} aria-current="page">
           {current.label}
         </Typography>
       )}

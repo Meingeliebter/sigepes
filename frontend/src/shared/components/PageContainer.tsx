@@ -6,6 +6,8 @@ interface PageContainerProps {
   subtitle?: string;
   actions?: ReactNode;
   children?: ReactNode;
+  /** Ancho máximo del panel; los formularios se leen mejor sin estirarse a todo el ancho. */
+  maxWidth?: number;
 }
 
 export function PageContainer({
@@ -13,9 +15,10 @@ export function PageContainer({
   subtitle,
   actions,
   children,
+  maxWidth,
 }: PageContainerProps) {
   return (
-    <Box>
+    <Box sx={{ maxWidth }}>
       <Box
         sx={{
           display: 'flex',
@@ -23,25 +26,22 @@ export function PageContainer({
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 2,
-          mb: 2,
-          pl: 2,
-          borderLeft: '4px solid',
-          borderColor: 'secondary.main',
+          mb: 2.5,
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.125rem' } }}>
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
               {subtitle}
             </Typography>
           )}
         </Box>
         {actions}
       </Box>
-      <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
+      <Paper variant="outlined" sx={{ p: { xs: 2.5, md: 4 } }}>
         {children}
       </Paper>
     </Box>

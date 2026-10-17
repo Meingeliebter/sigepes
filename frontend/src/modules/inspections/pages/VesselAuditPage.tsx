@@ -89,13 +89,13 @@ export function VesselAuditPage() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Stack spacing={2}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
               {!scanning ? (
-                <Button variant="contained" startIcon={<CameraAltIcon />} onClick={() => void startScanning()}>
+                <Button variant="contained" startIcon={<CameraAltIcon />} onClick={() => void startScanning()} sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                   Escanear QR
                 </Button>
               ) : (
-                <Button variant="outlined" color="error" startIcon={<StopCircleIcon />} onClick={() => void stopScanning()}>
+                <Button variant="outlined" color="error" startIcon={<StopCircleIcon />} onClick={() => void stopScanning()} sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                   Detener cámara
                 </Button>
               )}
@@ -107,7 +107,7 @@ export function VesselAuditPage() {
                 onChange={(e) => setManualCode(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && void lookup(manualCode)}
               />
-              <Button variant="outlined" startIcon={<SearchIcon />} onClick={() => void lookup(manualCode)} disabled={loading}>
+              <Button variant="outlined" startIcon={<SearchIcon />} onClick={() => void lookup(manualCode)} disabled={loading} sx={{ flexShrink: 0 }}>
                 Buscar
               </Button>
             </Stack>

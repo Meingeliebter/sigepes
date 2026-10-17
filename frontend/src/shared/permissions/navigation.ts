@@ -39,3 +39,13 @@ export const NAV_ITEMS: NavItem[] = [
 
 /** Etiquetas de las secciones del menú, en el orden en que deben mostrarse. */
 export const NAV_GROUPS = ['Operación', 'Recursos y control', 'Administración'] as const;
+
+/**
+ * Ítem de navegación que corresponde a la ruta actual. Gana el prefijo más largo, para que
+ * "/app/permits/verify" marque "Verificar permiso" y no también "Permisos".
+ */
+export function matchNavItem(pathname: string, items: NavItem[] = NAV_ITEMS): NavItem | undefined {
+  return items
+    .filter((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+}
