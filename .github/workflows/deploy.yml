@@ -133,7 +133,7 @@ jobs:
           # El dominio de FRONTEND_URL se fija en cada despliegue: renombrar el proyecto en Vercel ya no
           # deja el dominio público apuntando a nada (DEPLOYMENT_NOT_FOUND).
           host="${FRONTEND_URL#https://}"; host="${host%%/*}"
-          npx --yes "$VERCEL_CLI" alias set "$DEPLOY_URL" "$host" --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+          npx --yes "$VERCEL_CLI" alias set "$DEPLOY_URL" "$host" --token="$VERCEL_TOKEN"
       - name: Prueba de humo
         if: steps.config.outputs.ready == 'true'
         env:
