@@ -42,72 +42,97 @@ docker compose up --build       # PostgreSQL + API + frontend (nginx) → http:/
 
 ```
 Pull request ──► CI (backend, frontend, Docker) ──► Vista previa en Vercel (comentada en el PR)
-Merge a main ──► CI ──► Imágenes en GHCR ──► API en Render (health UP) ──► Frontend en Vercel ──► Prueba de humo
+Merge a main ──► CI ──► Imágenes en GHCR ──► API en Railway (health UP) ──► Frontend en Vercel ──► Prueba de humo
 ```
 
 | Pieza | Dónde | Qué hace |
 |---|---|---|
 | Integración continua | `.github/workflows/ci.yml` | En cada push/PR: `mvnw verify`, lint y build del frontend, build de las imágenes. En `main` publica las imágenes en GitHub Container Registry con la etiqueta del commit. |
 | Vista previa | `.github/workflows/preview.yml` | Con CI verde en un PR, publica el frontend en una URL de Vercel y la comenta en el PR. |
-| Despliegue continuo | `.github/workflows/deploy.yml` | Con CI verde en `main`: despliega en Render el commit exacto, espera `/actuator/health` = `UP`, publica el frontend en Vercel y comprueba que la web responde y que CORS acepta el dominio. También se puede lanzar a mano (*Actions → Deploy → Run workflow*). |
-| API + PostgreSQL | Render (`render.yaml`) | Blueprint en plan gratuito: base de datos gestionada conectada sola, `JWT_SECRET` generado por Render y health check con reinicio automático. |
+| Despliegue continuo | `.github/workflows/deploy.yml` | Con CI verde en `main`: sube a Railway el commit exacto, espera `/actuator/health` = `UP`, publica el frontend en Vercel y comprueba que la web responde y que CORS acepta el dominio. También se puede lanzar a mano (*Actions → Deploy → Run workflow*). |
+| API (contenedor) + PostgreSQL | Railway (`backend/railway.json`) | Railway construye `backend/Dockerfile` y solo activa la versión nueva si el health check responde; reinicia el contenedor si falla. PostgreSQL gestionado en el mismo proyecto y volumen persistente en `/var/data` para los archivos subidos (AC-15.6). |
 | Frontend | Vercel (`frontend/vercel.json`) | Estáticos comprimidos en CDN. El despliegue automático propio de Vercel está desactivado: solo publica el pipeline con el CI en verde. |
 
 ### Configuración única (≈15 minutos)
 
 Las cuentas y los tokens los crea la persona responsable del despliegue; nunca se escriben en el
-repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Render](https://render.com) y
+repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Railway](https://railway.com) y
 [Vercel](https://vercel.com); las dos últimas se pueden abrir con "Continuar con GitHub".
 
-1. **API en Render.** *New → Blueprint →* elige este repositorio *→ Apply*. Render crea
-   `sigepes-db` y `sigepes-api`. Cuando termine:
-   - Copia la URL pública del servicio (p. ej. `https://sigepes-api.onrender.com`).
-   - En *sigepes-api → Settings → Deploy Hook* copia la URL del hook.
+1. **Proyecto en Railway.** *New Project → Empty Project*. Dentro del proyecto:
+   - *+ Create → Database → PostgreSQL* (queda como servicio `Postgres`).
+   - *+ Create → Empty Service*, renómbralo a **`sigepes-api`**. No lo conectes al repositorio:
+     lo despliega GitHub Actions cuando el CI pasa.
+   - En `sigepes-api` → *Variables → Raw Editor*, pega:
+
+     ```
+     SPRING_PROFILES_ACTIVE=prod
+     JWT_SECRET=${{secret(64)}}
+     DATABASE_HOST=${{Postgres.PGHOST}}
+     DATABASE_PORT=${{Postgres.PGPORT}}
+     DATABASE_NAME=${{Postgres.PGDATABASE}}
+     DATABASE_USER=${{Postgres.PGUSER}}
+     DATABASE_PASSWORD=${{Postgres.PGPASSWORD}}
+     UPLOADS_DIR=/var/data/uploads
+     SEED_DEMO_DATA=true
+     JAVA_OPTS=-XX:MaxRAMPercentage=75
+     FRONTEND_URL=https://sigepes.vercel.app,https://sigepes-*.vercel.app
+     ```
+
+     `JWT_SECRET` lo genera Railway y las credenciales de la base se enlazan solas. Ajusta
+     `FRONTEND_URL` cuando conozcas tu dominio de Vercel (paso 2).
+   - En `sigepes-api` → *Settings*: en **Volumes** añade un volumen montado en **`/var/data`**, y en
+     **Networking → Generate Domain** crea la URL pública (p. ej.
+     `https://sigepes-api-production.up.railway.app`).
+   - *Project Settings → Tokens*: crea un **token de proyecto** para el entorno `production`.
 2. **Proyecto en Vercel.** *Add New → Project →* importa este repositorio con
    **Root Directory = `frontend`** y *Deploy*. Anota el dominio (p. ej. `https://sigepes.vercel.app`).
    Luego:
    - *Account Settings → Tokens*: crea un token para GitHub Actions.
    - *Project → Settings → General*: copia el **Project ID**. El **Team/Org ID** está en
      *Team Settings → General* (en cuentas personales, *Account Settings → General → Your ID*).
-3. **CORS en Render.** En *sigepes-api → Environment* define
-   `FRONTEND_URL = https://sigepes.vercel.app,https://sigepes-*.vercel.app` (dominio de producción
-   y vistas previas) y guarda.
-4. **Secretos y variables en GitHub.** En una terminal con `gh` autenticado, desde la raíz del
+3. **Secretos y variables en GitHub.** En una terminal con `gh` autenticado, desde la raíz del
    repositorio (cada `gh secret set` pide el valor sin mostrarlo):
 
    ```bash
-   gh secret set RENDER_DEPLOY_HOOK_URL
+   gh secret set RAILWAY_TOKEN
    gh secret set VERCEL_TOKEN
    gh secret set VERCEL_ORG_ID
    gh secret set VERCEL_PROJECT_ID
-   gh variable set API_URL --body "https://sigepes-api.onrender.com"
+   gh variable set API_URL --body "https://sigepes-api-production.up.railway.app"
    gh variable set FRONTEND_URL --body "https://sigepes.vercel.app"
    ```
+
+   Si el servicio de la API no se llama `sigepes-api`, define también
+   `gh variable set RAILWAY_SERVICE --body "<nombre>"`.
 
    Opcional, mapa de Google: crea en Google Cloud una clave de navegador de *Maps JavaScript API*
    restringida a `*.vercel.app` y guárdala con `gh secret set GOOGLE_MAPS_API_KEY`. Sin ella la app
    usa el mapa esquemático.
-5. **Primer despliegue.** *Actions → Deploy → Run workflow*, o simplemente fusiona a `main`.
-6. **Protección de `main`.** En *Settings → Branches* exige los checks `Backend (Spring Boot)`,
+4. **Primer despliegue.** *Actions → Deploy → Run workflow*, o simplemente fusiona a `main`.
+5. **Protección de `main`.** En *Settings → Branches* exige los checks `Backend (Spring Boot)`,
    `Frontend (React + Vite)` e `Imágenes Docker`: un pipeline en rojo bloquea el merge (AC-21.1).
 
-Credenciales de demostración: las del `frontend/README.md` (los datos DEMO se cargan si
-`SEED_DEMO_DATA=true`, como define el blueprint). Desactívalo para una instalación real.
+Credenciales de demostración: las del `frontend/README.md` (los datos DEMO se cargan con
+`SEED_DEMO_DATA=true`). Desactívalo para una instalación real.
 
-**Plan gratuito.** El servicio de Render se duerme tras 15 minutos sin tráfico; la primera
-petición tarda alrededor de un minuto. No tiene disco persistente, así que los archivos subidos se
-pierden al redesplegar: para cumplir AC-15.6 cambia a `plan: starter` y activa el bloque `disk` de
-`render.yaml`. La base de datos gratuita de Render caduca a los 30 días.
+**Costo.** Railway no tiene plan gratuito permanente: ofrece un periodo de prueba con crédito y
+luego el plan *Hobby* (alrededor de 5 USD al mes con ese consumo incluido), suficiente para la API
+y la base de datos de este proyecto. Vercel (plan Hobby) y GitHub Actions en repositorios públicos
+no tienen costo. Revisa los precios vigentes en railway.com/pricing.
 
-Ningún secreto vive en el repositorio. HTTPS lo terminan Render y Vercel; la API respeta
-`X-Forwarded-*` y CORS solo admite los orígenes de `FRONTEND_URL`.
+Ningún secreto vive en el repositorio. HTTPS lo terminan Railway y Vercel; la API respeta
+`X-Forwarded-*` y CORS solo admite los orígenes de `FRONTEND_URL`. Dentro del contenedor, la JVM
+corre con un usuario sin privilegios: `docker-entrypoint.sh` solo usa root para dejar escribible el
+volumen y en seguida cambia de usuario.
 
 ### Rollback (AC-21.6)
 
 - *Frontend:* en Vercel → *Deployments*, elige el despliegue anterior → **Promote to Production**
   (o `npx vercel@62.2.0 rollback`).
-- *API:* en Render → `sigepes-api` → *Events*, elige el despliegue anterior → **Rollback**. Las
-  migraciones Flyway son solo aditivas, así que la versión anterior arranca sobre el esquema nuevo.
+- *API:* en Railway → `sigepes-api` → *Deployments*, abre el despliegue anterior → **Redeploy**.
+  Las migraciones Flyway son solo aditivas, así que la versión anterior arranca sobre el esquema
+  nuevo.
 - *Imagen exacta:* cada commit de `main` está en `ghcr.io/<owner>/sigepes-backend:<sha>` y
   `ghcr.io/<owner>/sigepes-frontend:<sha>`.
 - *Código:* `git revert <commit>` en `main`; CI y Deploy se ejecutan solos.
@@ -122,7 +147,7 @@ RF-20 administración y auditoría.
 
 | HU | Requisito | Qué hace |
 | --- | --- | --- |
-| HU-21 | Despliegue | CI en GitHub Actions, contenedores Docker, Render + Vercel con health checks y rollback |
+| HU-21 | Despliegue | CI/CD en GitHub Actions, contenedor de la API en Railway, frontend en Vercel, health checks y rollback |
 | HU-07 | RF-07 Cuotas | Cuotas por especie, zona y periodo con descuento al cierre y umbrales 80/95/100 % |
 | HU-04 | RF-04 Geolocalización | GPS de la faena, zonas restringidas (vedas y AMP) y evento de control al ingresar; mapa de Google Maps con respaldo sin conexión |
 | HU-10 | RF-10 Denuncias | Denuncia ciudadana anónima sin cuenta, fotos sin EXIF, código de seguimiento y bandeja de inspección |
