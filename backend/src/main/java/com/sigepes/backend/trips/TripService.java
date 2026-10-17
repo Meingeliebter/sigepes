@@ -32,6 +32,7 @@ import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.users.UserService;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselService;
+import com.sigepes.backend.common.AppClock;
 
 /** RF-03 · Bitácora electrónica de faenas y capturas. */
 @Service
@@ -107,7 +108,7 @@ public class TripService {
             throw ApiException.of(ErrorCode.TRIP_ALREADY_REGISTERED);
         }
 
-        LocalDate date = request.date() != null ? request.date() : LocalDate.now();
+        LocalDate date = request.date() != null ? request.date() : AppClock.today();
         VesselEntity vessel = vesselService.byId(request.vesselId());
 
         compliance.requireUsableVessel(vessel, owner.getId());

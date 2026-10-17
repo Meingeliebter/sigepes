@@ -36,6 +36,7 @@ import com.sigepes.backend.users.UserService;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselRepository;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /**
  * Recorre el ciclo completo de una faena <b>sin</b> transacción de test envolvente.
@@ -89,7 +90,7 @@ class TripWithoutAmbientTransactionTest {
                 new BigDecimal("35.00"), SpeciesStatus.ACTIVE, MeasurementMethod.TOTAL_LENGTH, SpeciesRegion.AMBAS,
                 "https://placehold.co/400x300?text=Especie"));
         permitRepository.save(new PermitEntity(Ids.generate("per"), "PES-NOTX-1", "Pesca artesanal",
-                fisher.getFullName(), fisher, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(6),
+                fisher.getFullName(), fisher, AppClock.today().minusMonths(1), AppClock.today().plusMonths(6),
                 PermitStatus.APPROVED, "SIGEPES-NOTX-1"));
 
         String login = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)

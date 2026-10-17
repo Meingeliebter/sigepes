@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import com.sigepes.backend.support.ApiTestSupport;
 import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
+import com.sigepes.backend.common.AppClock;
 
 /** RF-20 · Tipo de acción, filtros de la vista de auditoría y alerta por fuerza bruta. */
 class AuditControllerTest extends ApiTestSupport {
@@ -86,7 +87,7 @@ class AuditControllerTest extends ApiTestSupport {
         // Un rango de fechas que empieza mañana no debe incluir el evento recién creado.
         mockMvc.perform(get("/api/v1/auditoria").header("Authorization", adminToken)
                 .param("actorId", fisher.getId())
-                .param("from", LocalDate.now().plusDays(1).toString()))
+                .param("from", AppClock.today().plusDays(1).toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.action=='VESSEL_CREATED')]").doesNotExist());
     }
