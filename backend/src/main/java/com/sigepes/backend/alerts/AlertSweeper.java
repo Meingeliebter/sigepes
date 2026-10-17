@@ -102,7 +102,7 @@ public class AlertSweeper {
     /** AC-20.5 · Fuerza bruta: solo para ADMIN, una alerta por IP y por hora. */
     private int security() {
         int created = 0;
-        String bucket = HOUR_BUCKET.format(LocalDateTime.now());
+        String bucket = HOUR_BUCKET.format(LocalDateTime.now(AppClock.ZONE));
         for (AuditLogRepository.SuspiciousIp ip : auditService.suspiciousLoginIps()) {
             created += alerts.notifyRoles(Set.of(Role.ADMIN), AlertType.SECURITY, AlertSeverity.CRITICAL,
                     "Posible ataque de fuerza bruta",
