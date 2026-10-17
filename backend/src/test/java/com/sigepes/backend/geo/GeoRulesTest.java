@@ -27,6 +27,7 @@ import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-04 · RF-04 / RN-08 · Geolocalización de la zona de pesca y zonas restringidas. */
 @RecordApplicationEvents
@@ -55,8 +56,8 @@ class GeoRulesTest extends ApiTestSupport {
         UserEntity fisher = givenUser("5050505050", "pescador.geo@sigepes.gov.co", Role.FISHER);
         givenUser("6060606060", "inspector.geo@sigepes.gov.co", Role.INSPECTOR);
         vessel = givenVessel(fisher, "DIMAR-GEO-001", VesselStatus.ACTIVE, givenGear("Línea geo", false));
-        givenPermit(fisher, "PES-GEO-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(1),
-                LocalDate.now().plusMonths(6));
+        givenPermit(fisher, "PES-GEO-1", PermitStatus.APPROVED, AppClock.today().minusMonths(1),
+                AppClock.today().plusMonths(6));
         fisherToken = bearerFor("pescador.geo@sigepes.gov.co");
         inspectorToken = bearerFor("inspector.geo@sigepes.gov.co");
     }

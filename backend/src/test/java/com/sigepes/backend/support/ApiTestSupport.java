@@ -39,6 +39,7 @@ import com.sigepes.backend.users.UserService;
 import com.sigepes.backend.vessels.VesselEntity;
 import com.sigepes.backend.vessels.VesselRepository;
 import com.sigepes.backend.vessels.VesselStatus;
+import com.sigepes.backend.common.AppClock;
 
 /**
  * Base de las pruebas de API: contexto completo, MockMvc y utilidades para preparar datos.
@@ -124,7 +125,7 @@ public abstract class ApiTestSupport {
             ClosureType closureType) {
         ClosureEntity closure = new ClosureEntity(Ids.generate("ved"), species, zone, from, to,
                 ClosureStatus.SCHEDULED, "AUNAP-TEST-0001", closureType);
-        closure.setStatus(closure.effectiveStatus(LocalDate.now()));
+        closure.setStatus(closure.effectiveStatus(AppClock.today()));
         return closureRepository.save(closure);
     }
 
