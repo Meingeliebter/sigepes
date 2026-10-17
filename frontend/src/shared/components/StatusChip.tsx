@@ -7,7 +7,7 @@ const toneByStatus: Record<string, Tone> = {
   PENDING: 'warning', UNDER_MAINTENANCE: 'warning', PENDING_SYNC: 'warning', EXPIRING: 'warning',
   IN_PROGRESS: 'warning', SUSPENDED: 'warning',
   DRAFT: 'default', INACTIVE: 'default', FINISHED: 'default', CANCELLED: 'default',
-  CLOSED: 'error', REJECTED: 'error', BLOCKED: 'error', EXPIRED: 'error',
+  CLOSED: 'error', REJECTED: 'error', BLOCKED: 'error', EXPIRED: 'error', DECOMMISSIONED: 'error',
   SCHEDULED: 'info', INFO: 'info',
 };
 
@@ -16,7 +16,7 @@ const labelByStatus: Record<string, string> = {
   PENDING: 'Pendiente', UNDER_MAINTENANCE: 'Mantenimiento', PENDING_SYNC: 'Por sincronizar', EXPIRING: 'Por vencer',
   IN_PROGRESS: 'En curso', SUSPENDED: 'Suspendido',
   DRAFT: 'Borrador', INACTIVE: 'Inactivo', FINISHED: 'Finalizada', CANCELLED: 'Anulada',
-  CLOSED: 'Cerrada', REJECTED: 'Rechazado', BLOCKED: 'Bloqueado', EXPIRED: 'Vencido',
+  CLOSED: 'Cerrada', REJECTED: 'Rechazado', BLOCKED: 'Bloqueado', EXPIRED: 'Vencido', DECOMMISSIONED: 'Dado de baja',
   SCHEDULED: 'Programada', INFO: 'Informativo',
 };
 
