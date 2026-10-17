@@ -7,6 +7,7 @@ export const ALERT_TYPE_LABEL: Record<AlertType, string> = {
   ZONE: 'Zona restringida',
   REPORT: 'Denuncia',
   SECURITY: 'Seguridad',
+  DOCUMENT: 'Documento',
 };
 
 /** AC-11.2 · Informativa / Atención / Crítica. */

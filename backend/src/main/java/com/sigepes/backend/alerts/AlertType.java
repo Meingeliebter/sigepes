@@ -7,5 +7,6 @@ public enum AlertType {
     PERMIT,
     ZONE,
     REPORT,
-    SECURITY
+    SECURITY,
+    DOCUMENT
 }
