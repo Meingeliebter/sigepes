@@ -8,8 +8,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RestrictedZone } from '../../api/domain.service';
 import { ZONE_TYPE_LABEL } from '../../geo/geo';
 import { MapLegend } from './MapLegend';
-import { useGoogleMapsAuthFailed } from './mapsAuth';
-import { SchematicMap } from './SchematicMap';
+import { markTilesUnavailable, useGoogleMapsAuthFailed } from './mapsAuth';
+import { LeafletGeoMap } from './LeafletGeoMap';
 import {
   INTRUSION_COLOR, TRACK_COLOR, TRACK_START_COLOR, ZONE_STYLE, type GeoMapProps, type MapPoint,
 } from './mapStyles';
@@ -105,9 +105,9 @@ function MapContents({ zones, track = [], highlightZoneId, height = 360, title, 
   // Satélite con etiquetas por defecto: se distinguen costa, arrecifes y nombres de lugares.
   const [mapType, setMapType] = useState<MapType>('hybrid');
 
-  // Clave inválida, sin facturación o red bloqueada: el esquema propio sigue funcionando.
+  // Clave inválida, sin facturación o red bloqueada: se pasa a OpenStreetMap (y, si tampoco carga, al esquema).
   if (authFailed || status === APILoadingStatus.FAILED || status === APILoadingStatus.AUTH_FAILURE) {
-    return <SchematicMap zones={zones} track={track} highlightZoneId={highlightZoneId} height={height} title={title} onPick={onPick} />;
+    return <LeafletGeoMap zones={zones} track={track} highlightZoneId={highlightZoneId} height={height} title={title} onPick={onPick} onTilesUnavailable={markTilesUnavailable} />;
   }
 
   return (
