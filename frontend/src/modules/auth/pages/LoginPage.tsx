@@ -19,7 +19,7 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'pescador@sigepes.gov.co', password: 'Pesca#2026' },
+    defaultValues: { email: '', password: '' },
   });
 
   const mutation = useMutation({
