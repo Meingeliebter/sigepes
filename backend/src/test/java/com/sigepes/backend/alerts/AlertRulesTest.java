@@ -27,6 +27,7 @@ import com.sigepes.backend.quotas.QuotaThresholdReached;
 import com.sigepes.backend.support.ApiTestSupport;
 import com.sigepes.backend.users.Role;
 import com.sigepes.backend.users.UserEntity;
+import com.sigepes.backend.common.AppClock;
 
 /** HU-11 · RF-11 / RN-22 · Alertas y notificaciones de cumplimiento. */
 class AlertRulesTest extends ApiTestSupport {
@@ -100,7 +101,7 @@ class AlertRulesTest extends ApiTestSupport {
         mockMvc.perform(multipart("/api/v1/denuncias").header("Authorization", fisherToken)
                 .file(new MockMultipartFile("request", "", MediaType.APPLICATION_JSON_VALUE, """
                         {"reportType":"OTHER","description":"Pesca con dinamita frente a la playa","occurredOn":"%s",
-                         "locationText":"Playa de Nuquí","anonymous":false}""".formatted(LocalDate.now())
+                         "locationText":"Playa de Nuquí","anonymous":false}""".formatted(AppClock.today())
                         .getBytes(StandardCharsets.UTF_8))))
                 .andExpect(status().isCreated());
 
@@ -116,10 +117,10 @@ class AlertRulesTest extends ApiTestSupport {
     @Test
     @DisplayName("TC-HU11-04 · Permisos por vencer y vedas: la revisión periódica no duplica alertas")
     void sweepIsIdempotent() throws Exception {
-        givenPermit(fisher, "PES-ALE-1", PermitStatus.APPROVED, LocalDate.now().minusMonths(6),
-                LocalDate.now().plusDays(12));
+        givenPermit(fisher, "PES-ALE-1", PermitStatus.APPROVED, AppClock.today().minusMonths(6),
+                AppClock.today().plusDays(12));
         givenClosure(givenSpecies("Robalo alerta", new BigDecimal("40")), "Pacífico Norte",
-                LocalDate.now().minusDays(2), LocalDate.now().plusDays(20));
+                AppClock.today().minusDays(2), AppClock.today().plusDays(20));
 
         assertThat(alertSweeper.sweep()).isGreaterThan(0);
         assertThat(alertSweeper.sweep()).isZero();
