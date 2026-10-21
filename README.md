@@ -53,17 +53,16 @@ Merge a main ──► CI ──► Imágenes en GHCR ──► API en Railway (
 | API (contenedor) + PostgreSQL | Railway (`backend/railway.json`) | Railway construye `backend/Dockerfile` y solo activa la versión nueva si el health check responde; reinicia el contenedor si falla. PostgreSQL gestionado en el mismo proyecto y volumen persistente en `/var/data` para los archivos subidos (AC-15.6). |
 | Frontend | Vercel (`frontend/vercel.json`) | Estáticos comprimidos en CDN. El despliegue automático propio de Vercel está desactivado: solo publica el pipeline con el CI en verde. |
 
-### Configuración única (≈15 minutos)
+### Configuración única
 
-Las cuentas y los tokens los crea la persona responsable del despliegue; nunca se escriben en el
-repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Railway](https://railway.com) y
-[Vercel](https://vercel.com); las dos últimas se pueden abrir con "Continuar con GitHub".
+Se necesitan cuentas de GitHub, [Railway](https://railway.com) y
+[Vercel](https://vercel.com).
 
 1. **Proyecto en Railway.** *New Project → Empty Project*. Dentro del proyecto:
    - *+ Create → Database → PostgreSQL* (queda como servicio `Postgres`).
-   - *+ Create → Empty Service*, renómbralo a **`sigepes-api`**. No lo conectes al repositorio:
+   - *+ Create → Empty Service*, renómbralo a **`sigepes-api`**. No se conecta al repositorio:
      lo despliega GitHub Actions cuando el CI pasa.
-   - En `sigepes-api` → *Variables → Raw Editor*, pega:
+   - En `sigepes-api` → *Variables → Raw Editor*:
 
      ```
      SPRING_PROFILES_ACTIVE=prod
@@ -81,7 +80,7 @@ repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Railway](https://railway
 
      `JWT_SECRET` lo genera Railway y las credenciales de la base se enlazan solas. Ajusta
      `FRONTEND_URL` cuando conozcas tu dominio de Vercel (paso 2).
-   - **Volumen:** los volúmenes no están en *Settings* del servicio. En el lienzo del proyecto haz clic
+   - **Volumen:** En el lienzo del proyecto haz clic
      derecho sobre `sigepes-api` → **Attach volume** (o `Ctrl/⌘ + K` → *Volume*) y móntalo en
      **`/var/data`**. Deja la API en la **misma región que `Postgres`** (*Settings → Regions*).
    - En `sigepes-api` → *Settings → Networking → Generate Domain* crea la URL pública (p. ej.
@@ -108,27 +107,13 @@ repositorio (AC-21.4). Se necesitan cuentas de GitHub, [Railway](https://railway
 
    Si el servicio de la API no se llama `sigepes-api`, define también
    `gh variable set RAILWAY_SERVICE --body "<nombre>"`.
-
-   Opcional, mapa de Google: crea en Google Cloud una clave de navegador de *Maps JavaScript API*
-   restringida a `*.vercel.app` y guárdala con `gh secret set GOOGLE_MAPS_API_KEY`. Sin ella la app
-   usa OpenStreetMap (Leaflet) con capas de mapa, satélite y relieve; el esquema propio queda solo
-   para cuando no hay conexión.
-4. **Primer despliegue.** *Actions → Deploy → Run workflow*, o simplemente fusiona a `main`.
-5. **Protección de `main`.** En *Settings → Branches* exige los checks `Backend (Spring Boot)`,
+   
+5. **Primer despliegue.** *Actions → Deploy → Run workflow*, o simplemente fusiona a `main`.
+6. **Protección de `main`.** En *Settings → Branches* exige los checks `Backend (Spring Boot)`,
    `Frontend (React + Vite)` e `Imágenes Docker`: un pipeline en rojo bloquea el merge (AC-21.1).
 
 Credenciales de demostración: las del `frontend/README.md` (los datos DEMO se cargan con
-`SEED_DEMO_DATA=true`). Desactívalo para una instalación real.
-
-**Costo.** Railway no tiene plan gratuito permanente: ofrece un periodo de prueba con crédito y
-luego el plan *Hobby* (alrededor de 5 USD al mes con ese consumo incluido), suficiente para la API
-y la base de datos de este proyecto. Vercel (plan Hobby) y GitHub Actions en repositorios públicos
-no tienen costo. Revisa los precios vigentes en railway.com/pricing.
-
-Ningún secreto vive en el repositorio. HTTPS lo terminan Railway y Vercel; la API respeta
-`X-Forwarded-*` y CORS solo admite los orígenes de `FRONTEND_URL`. Dentro del contenedor, la JVM
-corre con un usuario sin privilegios: `docker-entrypoint.sh` solo usa root para dejar escribible el
-volumen y en seguida cambia de usuario.
+`SEED_DEMO_DATA=true`). 
 
 ### Rollback (AC-21.6)
 
